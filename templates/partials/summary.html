@@ -1,0 +1,14 @@
+<div class="summary-card">
+    <h3>{{ summary.product_name }}</h3>
+    <dl class="summary-dl">
+        <dt>Platform</dt><dd>{{ summary.platform }}</dd>
+        <dt>Reviews</dt><dd>{{ summary.total_reviews }}</dd>
+        {% if summary.average_rating %}
+        <dt>Avg Rating</dt><dd>{{ "%.1f"|format(summary.average_rating) }} &#9733;</dd>
+        {% endif %}
+        {% if summary.date_range %}
+        <dt>Date Range</dt><dd>{{ summary.date_range }}</dd>
+        {% endif %}
+        <dt>Source</dt><dd>{{ summary.source_type | upper }}</dd>
+    </dl>
+</div>

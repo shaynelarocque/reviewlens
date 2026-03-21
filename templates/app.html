@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewLens{% if summary %} — {{ summary.product_name }}{% endif %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+    <div class="grain"></div>
+
+    <div class="app-layout">
+        <!-- ── Sidebar ──────────────────────────────────────────── -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo-link">
+                    <svg class="logo-icon" width="20" height="20" viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+                        <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1.5"/>
+                        <circle cx="16" cy="16" r="2.5" fill="currentColor"/>
+                    </svg>
+                    <span class="logo-text">Review<span class="serif-accent">Lens</span></span>
+                </a>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark">
+                    <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <button class="new-analysis-btn" onclick="openModal()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                New Analysis
+            </button>
+
+            {% if session %}
+            <!-- Active session summary -->
+            <div class="sidebar-section">
+                <div class="section-label">Current Dataset</div>
+                <div class="active-dataset">
+                    <div class="dataset-name">{{ summary.product_name }}</div>
+                    <div class="dataset-meta">
+                        <span class="platform-tag">{{ summary.platform }}</span>
+                        <span class="dataset-stat">{{ summary.total_reviews }} reviews</span>
+                        {% if summary.average_rating %}
+                        <span class="dataset-stat">{{ "%.1f"|format(summary.average_rating) }} avg</span>
+                        {% endif %}
+                    </div>
+                    {% if summary.rating_distribution %}
+                    <div class="mini-dist">
+                        {% for star in ['5','4','3','2','1'] %}
+                        {% set count = summary.rating_distribution.get(star, 0) %}
+                        {% set pct = (count / summary.total_reviews * 100) if summary.total_reviews else 0 %}
+                        <div class="mini-dist-row">
+                            <span class="mini-dist-label">{{ star }}</span>
+                            <div class="mini-dist-track">
+                                <div class="mini-dist-fill" style="--w: {{ pct }}%"></div>
+                            </div>
+                            <span class="mini-dist-count">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Chat history -->
+            <div class="sidebar-section sidebar-history">
+                <div class="section-label">History</div>
+                <nav class="session-list">
+                    {% for s in sessions %}
+                    <a href="/chat/{{ s.session_id }}"
+                       class="session-item{% if active_id == s.session_id %} active{% endif %}">
+                        <span class="session-name">{{ s.product_name or 'Untitled' }}</span>
+                        <span class="session-detail">{{ s.summary.total_reviews }} reviews &middot; {{ s.platform }}</span>
+                    </a>
+                    {% else %}
+                    <p class="empty-history">No analyses yet</p>
+                    {% endfor %}
+                </nav>
+            </div>
+        </aside>
+
+        <!-- ── Main Area ────────────────────────────────────────── -->
+        <main class="main-area">
+            {% if session %}
+            <!-- Chat view -->
+            <div class="chat-messages" id="chat-messages">
+                {% for msg in messages %}
+                    {% if msg.role == 'assistant' %}
+                    <div class="message assistant-message">
+                        <div class="message-content">{{ msg.content }}</div>
+                    </div>
+                    {% else %}
+                    <div class="message user-message">
+                        <div class="message-content"><p>{{ msg.content }}</p></div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+
+                {% if not messages %}
+                <div class="message assistant-message welcome">
+                    <div class="message-content">
+                        <p>I have <strong>{{ summary.total_reviews }} reviews</strong> loaded for <strong>{{ summary.product_name }}</strong> from <strong>{{ summary.platform }}</strong>{% if summary.date_range %}, spanning <strong>{{ summary.date_range }}</strong>{% endif %}.</p>
+                        <p>I can only answer questions grounded in this dataset. What would you like to explore?</p>
+                    </div>
+                    <div class="follow-ups">
+                        <button class="follow-up-btn" onclick="sendFollowUp(this)" data-question="What's the overall sentiment breakdown?">Sentiment breakdown</button>
+                        <button class="follow-up-btn" onclick="sendFollowUp(this)" data-question="What are the most common complaints?">Top complaints</button>
+                        <button class="follow-up-btn" onclick="sendFollowUp(this)" data-question="Show me the rating distribution over time">Ratings over time</button>
+                        <button class="follow-up-btn" onclick="sendFollowUp(this)" data-question="What do people praise the most?">Most praised aspects</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="chat-input-area">
+                <form id="chat-form" onsubmit="sendMessage(event)">
+                    <div class="input-row">
+                        <textarea id="chat-input" name="message" placeholder="Ask about the reviews..." rows="1" autofocus></textarea>
+                        <button type="submit" class="btn-send" id="send-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+                <p class="input-hint">Analyses only the uploaded dataset. No external knowledge.</p>
+            </div>
+
+            {% else %}
+            <!-- Empty state -->
+            <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 32 32" fill="none" class="empty-icon">
+                    <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+                    <circle cx="16" cy="16" r="8" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+                    <circle cx="16" cy="16" r="2.5" fill="currentColor" opacity="0.6"/>
+                </svg>
+                <h2>ReviewLens <span class="serif-accent">AI</span></h2>
+                <p>Upload customer reviews and explore them through a guardrailed Q&A interface.</p>
+                <button class="btn btn-primary" onclick="openModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    New Analysis
+                </button>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+
+    <!-- ── New Analysis Modal ───────────────────────────────────── -->
+    <div class="modal-backdrop" id="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal" id="analysis-modal">
+        <div class="modal-header">
+            <h2>New Analysis</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+
+        <div class="modal-tabs">
+            <button class="modal-tab active" onclick="switchTab(this, 'tab-csv')">CSV Upload</button>
+            <button class="modal-tab" onclick="switchTab(this, 'tab-url')">URL Scrape <span class="badge">Best-effort</span></button>
+        </div>
+
+        <!-- CSV Tab -->
+        <div class="modal-tab-content active" id="tab-csv">
+            <form id="csv-form"
+                  hx-post="/upload"
+                  hx-encoding="multipart/form-data"
+                  hx-target="#csv-result"
+                  hx-indicator="#csv-spinner">
+
+                <div class="form-group">
+                    <label for="product_name">Product / Entity</label>
+                    <input type="text" id="product_name" name="product_name" placeholder="e.g., AcmeCo Widget Pro" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="platform">Platform</label>
+                    <select id="platform" name="platform">
+                        <option value="">Auto-detect</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Google Maps">Google Maps</option>
+                        <option value="G2">G2</option>
+                        <option value="Capterra">Capterra</option>
+                        <option value="Trustpilot">Trustpilot</option>
+                        <option value="Yelp">Yelp</option>
+                        <option value="App Store">App Store</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="file-drop" id="file-drop">
+                    <input type="file" id="file" name="file" accept=".csv" required>
+                    <div class="file-drop-content">
+                        <svg class="file-drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="12" y1="18" x2="12" y2="12"/>
+                            <polyline points="9 15 12 12 15 15"/>
+                        </svg>
+                        <p>Drop CSV here or <span class="browse-link">browse</span></p>
+                        <p class="file-hint">Columns: text/review, rating, date, author</p>
+                    </div>
+                    <div class="file-selected" style="display:none">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span class="file-name"></span>
+                        <button type="button" class="file-clear" onclick="clearFile()">&times;</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-text">Analyse Reviews</span>
+                    <span class="btn-spinner" id="csv-spinner" style="display:none">
+                        <span class="spinner"></span> Indexing...
+                    </span>
+                </button>
+
+                <div id="csv-result"></div>
+            </form>
+        </div>
+
+        <!-- URL Tab -->
+        <div class="modal-tab-content" id="tab-url">
+            <form id="scrape-form"
+                  hx-post="/scrape"
+                  hx-target="#scrape-result"
+                  hx-indicator="#scrape-spinner">
+
+                <div class="form-group">
+                    <label for="scrape-product">Product / Entity</label>
+                    <input type="text" id="scrape-product" name="product_name" placeholder="e.g., AcmeCo Widget Pro">
+                </div>
+
+                <div class="form-group">
+                    <label for="scrape-platform">Platform</label>
+                    <select id="scrape-platform" name="platform">
+                        <option value="">Auto-detect</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Google Maps">Google Maps</option>
+                        <option value="G2">G2</option>
+                        <option value="Capterra">Capterra</option>
+                        <option value="Trustpilot">Trustpilot</option>
+                        <option value="Yelp">Yelp</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="url">Review Page URL</label>
+                    <input type="url" id="url" name="url" placeholder="https://..." required>
+                </div>
+
+                <button type="submit" class="btn btn-secondary">
+                    <span class="btn-text">Scrape &amp; Analyse</span>
+                    <span class="btn-spinner" id="scrape-spinner" style="display:none">
+                        <span class="spinner"></span> Scraping...
+                    </span>
+                </button>
+
+                <div id="scrape-result"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var SESSION_ID = "{{ active_id or '' }}";
+    </script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

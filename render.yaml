@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: reviewlens
+    runtime: docker
+    plan: free
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+    healthCheckPath: /health
