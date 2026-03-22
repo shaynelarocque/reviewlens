@@ -751,7 +751,7 @@ html.light .welcome .message-content {
     background: var(--bg-2);
     border: 1px solid var(--bg-3);
     border-radius: var(--radius-lg);
-    max-width: 480px;
+    max-width: 100%;
 }
 
 .chart-container canvas { max-height: 280px; }
@@ -782,7 +782,7 @@ html.light .welcome .message-content {
 /* ── Tool Activity Accordion ──────────────────────────────────── */
 
 .tool-accordion {
-    margin: 0.5rem 0;
+    margin-bottom: 0.6rem;
     border: 1px solid var(--bg-3);
     border-radius: var(--radius);
     overflow: hidden;
