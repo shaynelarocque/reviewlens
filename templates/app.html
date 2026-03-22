@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReviewLens{% if summary %} — {{ summary.product_name }}{% endif %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='none' stroke='%232dd4bf' stroke-width='1.5' opacity='.4'/><circle cx='16' cy='16' r='8' fill='none' stroke='%232dd4bf' stroke-width='1.5'/><circle cx='16' cy='16' r='2.5' fill='%232dd4bf'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -158,7 +159,15 @@
                     {{ msg|render_message }}
                 {% endfor %}
 
-                {% if not messages %}
+                {% if auto_analysis %}
+                <!-- Auto-analysis in progress -->
+                <div id="thinking-indicator" class="message assistant-message thinking">
+                    <div class="message-content">
+                        <p class="auto-analysis-label">Generating initial analysis...</p>
+                        <div class="thinking-dots"><span></span><span></span><span></span></div>
+                    </div>
+                </div>
+                {% elif not messages %}
                 <div class="message assistant-message welcome">
                     <div class="message-content">
                         <p>I have <strong>{{ summary.total_reviews }} reviews</strong> loaded for <strong>{{ summary.product_name }}</strong> from <strong>{{ summary.platform }}</strong>{% if summary.date_range %}, spanning <strong>{{ summary.date_range }}</strong>{% endif %}.</p>
@@ -358,6 +367,7 @@
 
     <script>
         var SESSION_ID = "{{ active_id or '' }}";
+        var AUTO_ANALYSIS = {{ 'true' if auto_analysis else 'false' }};
     </script>
     <script src="/static/app.js"></script>
 </body>

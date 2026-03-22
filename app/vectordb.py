@@ -142,6 +142,25 @@ def get_all_reviews(session_id: str) -> list[dict[str, Any]]:
     return out
 
 
+def get_review_by_id(session_id: str, review_id: str) -> dict[str, Any] | None:
+    """Get a single review by ID. Returns None if not found."""
+    client = _get_client()
+    try:
+        col = client.get_collection(_collection_name(session_id))
+    except Exception:
+        return None
+
+    results = col.get(ids=[review_id], include=["documents", "metadatas"])
+    if not results["ids"]:
+        return None
+
+    return {
+        "id": results["ids"][0],
+        "text": results["documents"][0],
+        "metadata": results["metadatas"][0] if results.get("metadatas") else {},
+    }
+
+
 def get_review_count(session_id: str) -> int:
     client = _get_client()
     try:

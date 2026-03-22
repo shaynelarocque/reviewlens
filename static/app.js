@@ -527,6 +527,16 @@ if (chatMessages) {
 scrollToBottom();
 runChartScripts();
 
+// ── Auto-analysis SSE connection ────────────────────────────────────
+
+if (typeof AUTO_ANALYSIS !== "undefined" && AUTO_ANALYSIS && SESSION_ID) {
+  _log.info("Auto-analysis in progress — connecting to SSE stream");
+  _sending = true;
+  if (chatInput) chatInput.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
+  listenForResponse();
+}
+
 // ── Scraping status poll ────────────────────────────────────────────
 
 (function () {

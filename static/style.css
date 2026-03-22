@@ -699,6 +699,13 @@ html.light .welcome .message-content {
 
 /* ── Thinking ──────────────────────────────────────────────────── */
 
+.auto-analysis-label {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin: 0;
+}
+
 .thinking .message-content {
     display: flex;
     flex-direction: column;

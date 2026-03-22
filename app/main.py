@@ -66,6 +66,39 @@ async def _emit(session_id: str, message: str, level: str = "info") -> None:
     _get_queue(session_id).append({"event": level, "data": message})
 
 
+# ── Auto-analysis prompt ─────────────────────────────────────────────
+
+_INITIAL_ANALYSIS_PROMPT = (
+    "Analyse this dataset and provide an initial intelligence briefing. "
+    "This is the analyst's first look at the data — make it count.\n\n"
+    "Cover these areas:\n"
+    "1. Dataset overview with a rating distribution chart\n"
+    "2. Top 3 most praised aspects with specific review citations\n"
+    "3. Top 3 complaints or pain points with specific review citations\n"
+    "4. Any notable risk signals, emerging trends, or inconsistencies worth flagging\n"
+    "5. A brief overall sentiment assessment\n\n"
+    "Use multiple search queries with different angles to be thorough. "
+    "Generate at least one chart. Save the most significant findings to the report. "
+    "End with follow-up suggestions that drill into the most interesting patterns you found.\n\n"
+    "Consult the knowledge base (list_knowledge_files → read_knowledge_file) "
+    "if you need analytical frameworks for your analysis."
+)
+
+
+def _trigger_auto_analysis(session_id: str, session: Session) -> None:
+    """Save a synthetic message and kick off the initial analysis agent run."""
+    trigger_msg = ChatMessage(
+        role="user",
+        content="[initial_analysis]",
+        system_initiated=True,
+    )
+    store.append_message(session_id, trigger_msg)
+    _get_response_event(session_id).clear()
+    asyncio.create_task(
+        _run_agent_and_respond(session_id, _INITIAL_ANALYSIS_PROMPT, session)
+    )
+
+
 # ── Health check ─────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -94,14 +127,27 @@ def _list_sample_files() -> list[dict[str, str]]:
 def _shell_context(request: Request, session=None):
     """Build template context for the app shell."""
     sessions = store.list_sessions()
+
+    # Filter out system-initiated messages for display
+    messages = session.messages if session else []
+    visible_messages = [m for m in messages if not (m.system_initiated and m.role == "user")]
+
+    # Detect if auto-analysis is in progress (has trigger message but no assistant response yet)
+    auto_analysis = False
+    if session and session.status == "ready":
+        has_trigger = any(m.system_initiated for m in messages)
+        has_response = any(m.role == "assistant" for m in messages)
+        auto_analysis = has_trigger and not has_response
+
     ctx = {
         "request": request,
         "sessions": sessions,
         "session": session,
         "summary": session.summary if session else None,
-        "messages": session.messages if session else [],
+        "messages": visible_messages,
         "active_id": session.session_id if session else None,
         "sample_files": _list_sample_files(),
+        "auto_analysis": auto_analysis,
     }
     return ctx
 
@@ -164,6 +210,11 @@ async def upload_csv(
     store.update_summary(session_id, summary)
     store.set_status(session_id, "ready")
 
+    # Kick off auto-analysis
+    session = store.load_session(session_id)
+    if session:
+        _trigger_auto_analysis(session_id, session)
+
     return HTMLResponse(
         status_code=200,
         content=f'<script>window.location.href="/chat/{session_id}";</script>',
@@ -223,6 +274,11 @@ async def load_sample(
     summary.total_reviews = indexed
     store.update_summary(session_id, summary)
     store.set_status(session_id, "ready")
+
+    # Kick off auto-analysis
+    session = store.load_session(session_id)
+    if session:
+        _trigger_auto_analysis(session_id, session)
 
     return HTMLResponse(
         status_code=200,
@@ -470,6 +526,10 @@ def _render_citations(html: str, sources: list[dict[str, Any]]) -> str:
 
 
 def _render_message(msg: ChatMessage) -> str:
+    # Skip system-initiated trigger messages (auto-analysis)
+    if msg.system_initiated and msg.role == "user":
+        return ""
+
     role_class = "user-message" if msg.role == "user" else "assistant-message"
     escaped = html_module.escape(msg.content)
 

@@ -86,3 +86,41 @@ Templates for common analysis types. Use these as frameworks — adapt to what t
 3. Rank by: frequency, severity (how angry?), recency (getting worse?)
 4. For each pain point: specific quotes, count, trend direction, and which customer segment is most affected
 5. Distinguish between product issues (fixable) and expectation mismatches (messaging problem)
+
+## Data Quality & Anomaly Detection
+
+**When to use:** Proactively during initial briefings, or when the user asks about data quality, fake reviews, or suspicious patterns. Use the `find_anomalies` tool and interpret the results through these lenses.
+
+### Rating-Text Mismatches
+A 5-star review saying "terrible product, broke on day one" is either a data entry error or deliberate manipulation. In ORM context:
+- **Positive rating + negative text:** Often accidental wrong-star selection, but at scale can indicate incentivised reviewers who copy-paste generic text
+- **Negative rating + positive text:** Less common. Sometimes a confused user, sometimes a competitor trying to suppress ratings while appearing legitimate
+
+A few mismatches in a large dataset is normal human error. More than 5% warrants a flag.
+
+### Duplicate & Near-Duplicate Reviews
+Identical or near-identical review text across multiple entries is one of the strongest astroturfing indicators:
+- **Exact duplicates:** Clear data quality issue or review manipulation
+- **Same opening / template text:** Suggests coordinated campaign — reviewers given a script
+- **Same author, multiple reviews:** Could be legitimate (repeat customer) or sock puppet
+
+Cross-reference with timing — duplicates posted within the same week are much more suspicious than ones months apart.
+
+### Review Volume Spikes
+Days with 3x+ the average daily volume may indicate:
+- **Organic spike:** Product launch, viral social media mention, seasonal event
+- **Review bombing:** Coordinated negative campaign, often visible as a cluster of 1-star reviews in a short window
+- **Incentivised campaign:** Burst of positive reviews, often with similar language patterns
+- **Product issue:** A defective batch or service outage can trigger a genuine complaint spike
+
+Always check what the spike reviews actually say. The content distinguishes organic from manufactured.
+
+### Suspiciously Short/Long Reviews
+- **Very short (< 20 chars):** Low-effort reviews, possibly incentivised ("Great product!"), or placeholder ratings. Low analytical value but not necessarily fake.
+- **Very long (3x+ average):** Often genuine power users or deeply frustrated customers. These tend to be the most informative reviews in the dataset — don't dismiss them as outliers.
+
+### How to Report Anomalies
+Frame findings carefully. Don't accuse — flag patterns and let the analyst decide:
+- "X reviews show rating-text mismatches worth investigating"
+- "A cluster of Y similar reviews posted within Z days suggests coordinated activity"
+- "Data quality note: N reviews are under 20 characters and may not contribute meaningfully to analysis"

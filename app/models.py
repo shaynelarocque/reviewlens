@@ -47,6 +47,7 @@ class ChatMessage(BaseModel):
 
     role: str  # "user" or "assistant"
     content: str
+    system_initiated: bool = False
     charts: list[dict[str, Any]] = Field(default_factory=list)
     follow_ups: list[str] = Field(default_factory=list)
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)
