@@ -365,6 +365,99 @@ html.light .new-analysis-btn {
     color: var(--text-3);
 }
 
+/* Session item with menu */
+
+.session-item-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    z-index: 0;
+}
+
+.session-item-wrap:hover,
+.session-item-wrap:has(.session-menu-wrap.open) {
+    z-index: 10;
+}
+
+.session-item-wrap .session-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.session-menu-wrap {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+
+.session-item-wrap:hover .session-menu-wrap,
+.session-menu-wrap.open {
+    opacity: 1;
+}
+
+.session-menu-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--bg-3);
+    border-radius: var(--radius);
+    color: var(--text-2);
+    cursor: pointer;
+    padding: 3px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.12s, background 0.12s;
+}
+
+.session-menu-btn:hover {
+    color: var(--text-0);
+    background: var(--bg-3);
+}
+
+.session-menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: var(--bg-2);
+    border: 1px solid var(--bg-3);
+    border-radius: var(--radius);
+    min-width: 120px;
+    padding: 3px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+html.light .session-menu-dropdown {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.session-menu-wrap.open .session-menu-dropdown {
+    display: block;
+}
+
+.session-menu-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-1);
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.session-menu-action:hover {
+    background: var(--bg-3);
+}
+
 .empty-history {
     font-size: 0.8rem;
     color: var(--text-3);
@@ -374,6 +467,82 @@ html.light .new-analysis-btn {
 /* ═══════════════════════════════════════════════════════════════════
    MAIN AREA
    ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Scraping Progress ─────────────────────────────────────────── */
+
+.scraping-view {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.scraping-content {
+    text-align: center;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.scraping-content h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.scraping-detail {
+    font-size: 0.85rem;
+    color: var(--text-2);
+    line-height: 1.6;
+}
+
+@keyframes scrape-spin {
+    to { transform: rotate(360deg); }
+}
+
+.scraping-spinner {
+    animation: scrape-spin 1.2s linear infinite;
+    transform-origin: center;
+}
+
+.scraping-animation {
+    margin-bottom: 0.25rem;
+}
+
+.scraping-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-top: 0.5rem;
+    text-align: left;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-3);
+    transition: color 0.2s;
+}
+
+.step.active { color: var(--text-1); }
+.step.done { color: var(--accent); }
+
+.step-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--bg-4);
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+
+.step.active .step-dot { background: var(--accent); }
+.step.done .step-dot { background: var(--accent); }
 
 .main-area {
     display: flex;

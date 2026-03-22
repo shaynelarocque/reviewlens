@@ -80,11 +80,28 @@
                 <div class="section-label">History</div>
                 <nav class="session-list">
                     {% for s in sessions %}
-                    <a href="/chat/{{ s.session_id }}"
-                       class="session-item{% if active_id == s.session_id %} active{% endif %}">
-                        <span class="session-name">{{ s.product_name or 'Untitled' }}</span>
-                        <span class="session-detail">{{ s.summary.total_reviews }} reviews &middot; {{ s.platform }}</span>
-                    </a>
+                    <div class="session-item-wrap">
+                        <a href="/chat/{{ s.session_id }}"
+                           class="session-item{% if active_id == s.session_id %} active{% endif %}">
+                            <span class="session-name">{{ s.product_name or 'Untitled' }}</span>
+                            <span class="session-detail">{{ s.summary.total_reviews }} reviews &middot; {{ s.platform }}</span>
+                        </a>
+                        <div class="session-menu-wrap">
+                            <button class="session-menu-btn" onclick="toggleSessionMenu(event, this)" aria-label="Session options">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+                                </svg>
+                            </button>
+                            <div class="session-menu-dropdown">
+                                <button class="session-menu-action" onclick="archiveSession(event, '{{ s.session_id }}')">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                                    </svg>
+                                    Archive
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     {% else %}
                     <p class="empty-history">No analyses yet</p>
                     {% endfor %}
@@ -94,7 +111,47 @@
 
         <!-- ── Main Area ────────────────────────────────────────── -->
         <main class="main-area">
-            {% if session %}
+            {% if session and session.status == 'scraping' %}
+            <!-- Scraping in progress -->
+            <div class="scraping-view" id="scraping-view">
+                <div class="scraping-content">
+                    <div class="scraping-animation">
+                        <svg class="scraping-icon" width="40" height="40" viewBox="0 0 32 32" fill="none">
+                            <circle cx="16" cy="16" r="14" stroke="var(--accent)" stroke-width="1.5" opacity="0.2"/>
+                            <circle cx="16" cy="16" r="14" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="20 68" class="scraping-spinner"/>
+                        </svg>
+                    </div>
+                    <h3>Scraping reviews...</h3>
+                    <p class="scraping-detail">Firecrawl is navigating <strong>{{ session.platform }}</strong> to extract reviews for <strong>{{ session.product_name }}</strong>. This may take a few minutes for sites with pagination or anti-bot protection.</p>
+                    <div class="scraping-steps">
+                        <div class="step active">
+                            <span class="step-dot"></span>
+                            <span>Submitting to Firecrawl agent</span>
+                        </div>
+                        <div class="step" id="step-navigating">
+                            <span class="step-dot"></span>
+                            <span>Navigating pages &amp; extracting reviews</span>
+                        </div>
+                        <div class="step" id="step-indexing">
+                            <span class="step-dot"></span>
+                            <span>Indexing into vector database</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% elif session and session.status == 'error' %}
+            <!-- Scraping failed -->
+            <div class="empty-state">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--error)" stroke-width="1.5" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                <h2>Scraping failed</h2>
+                <p>Could not extract reviews from this URL. The site may be blocking automated access.</p>
+                <button class="btn btn-primary" onclick="openModal()" style="width:auto">Try Again</button>
+            </div>
+
+            {% elif session %}
             <!-- Chat view -->
             <div class="chat-messages" id="chat-messages">
                 {% for msg in messages %}
@@ -126,7 +183,7 @@
             </div>
 
             <div class="chat-input-area">
-                <form id="chat-form" onsubmit="sendMessage(event)">
+                <form id="chat-form" onsubmit="sendMessage(event); return false;">
                     <div class="input-row">
                         <textarea id="chat-input" name="message" placeholder="Ask about the reviews..." rows="1" autofocus></textarea>
                         <button type="submit" class="btn-send" id="send-btn">
@@ -170,7 +227,8 @@
 
         <div class="modal-tabs">
             <button class="modal-tab active" onclick="switchTab(this, 'tab-csv')">CSV Upload</button>
-            <button class="modal-tab" onclick="switchTab(this, 'tab-url')">URL Scrape <span class="badge">Best-effort</span></button>
+            <button class="modal-tab" onclick="switchTab(this, 'tab-url')">URL Scrape</button>
+            <button class="modal-tab" onclick="switchTab(this, 'tab-sample')">Sample Data</button>
         </div>
 
         <!-- CSV Tab -->
@@ -272,6 +330,36 @@
                 </button>
 
                 <div id="scrape-result"></div>
+            </form>
+        </div>
+
+        <!-- Sample Data Tab -->
+        <div class="modal-tab-content" id="tab-sample">
+            <p class="upload-desc" style="margin-bottom:1rem">Load a pre-built dataset to explore ReviewLens without needing your own data.</p>
+
+            <form id="sample-form"
+                  hx-post="/sample"
+                  hx-target="#sample-result"
+                  hx-indicator="#sample-spinner">
+
+                <div class="form-group">
+                    <label for="sample-file">Dataset</label>
+                    <select id="sample-file" name="filename" required>
+                        <option value="" disabled selected>Choose a sample dataset...</option>
+                        {% for sf in sample_files %}
+                        <option value="{{ sf.filename }}">{{ sf.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <span class="btn-text">Load Dataset</span>
+                    <span class="btn-spinner" id="sample-spinner" style="display:none">
+                        <span class="spinner"></span> Loading...
+                    </span>
+                </button>
+
+                <div id="sample-result"></div>
             </form>
         </div>
     </div>

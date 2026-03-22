@@ -19,7 +19,7 @@ from .models import ChatMessage, IngestionSummary
 from .prompts import build_system_prompt
 from .tools import create_review_tools_server
 
-DEFAULT_MODEL = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6-20250514")
+DEFAULT_MODEL = "claude-sonnet-4-6"
 
 
 async def handle_message(
@@ -31,6 +31,7 @@ async def handle_message(
 ) -> ChatMessage:
     """Run the agent for a single user message. Returns the assistant's response."""
 
+    model = os.getenv("CLAUDE_MODEL", DEFAULT_MODEL)
     system_prompt = build_system_prompt(summary)
 
     # Build conversation context for the agent
@@ -76,7 +77,7 @@ async def handle_message(
         allowed_tools=["mcp__reviewlens__*"],
         permission_mode="bypassPermissions",
         max_turns=15,
-        model=DEFAULT_MODEL,
+        model=model,
         mcp_servers={"reviewlens": server},
         hooks={
             "PostToolUse": [HookMatcher(matcher=".*", hooks=[post_tool_hook])],

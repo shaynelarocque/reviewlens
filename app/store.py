@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 
 from .models import ChatMessage, IngestionSummary, Session
@@ -93,3 +94,12 @@ def list_sessions() -> list[Session]:
                 continue
     sessions.sort(key=lambda s: s.created_at, reverse=True)
     return sessions
+
+
+def delete_session(session_id: str) -> bool:
+    """Delete a session and all its data. Returns True if it existed."""
+    d = DATA_DIR / session_id
+    if d.exists() and d.is_dir():
+        shutil.rmtree(d)
+        return True
+    return False

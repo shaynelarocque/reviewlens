@@ -28,7 +28,7 @@ def create_review_tools_server(
     @tool(
         name="search_reviews",
         description="Semantic search over the ingested review database. Use this to find reviews relevant to the user's question. Returns the most relevant reviews ranked by similarity.",
-        schema={
+        input_schema={
             "type": "object",
             "properties": {
                 "query": {
@@ -98,7 +98,7 @@ def create_review_tools_server(
     @tool(
         name="analyze_sentiment",
         description="Analyse sentiment and extract aspects from reviews matching a query. Returns aspect-sentiment pairs and overall sentiment distribution. Use for questions about what people like/dislike, pain points, praise, etc.",
-        schema={
+        input_schema={
             "type": "object",
             "properties": {
                 "query": {
@@ -166,7 +166,7 @@ def create_review_tools_server(
     @tool(
         name="generate_chart",
         description="Generate a Chart.js chart configuration that renders inline in the chat. Use for visualising rating distributions, sentiment breakdowns, trends over time, aspect comparisons, etc. The chart renders automatically — just return valid config.",
-        schema={
+        input_schema={
             "type": "object",
             "properties": {
                 "chart_type": {
@@ -237,7 +237,7 @@ def create_review_tools_server(
     @tool(
         name="calculate_stats",
         description="Calculate aggregate statistics over the full review dataset. Use for quantitative questions: average ratings, distributions, counts by category, trends over time periods, etc.",
-        schema={
+        input_schema={
             "type": "object",
             "properties": {
                 "operation": {
@@ -357,7 +357,7 @@ def create_review_tools_server(
     @tool(
         name="suggest_follow_ups",
         description="Generate contextual follow-up question buttons based on the current conversation. Call this at the END of every response. The questions should be specific to what was just discussed and lead the user deeper into the data.",
-        schema={
+        input_schema={
             "type": "object",
             "properties": {
                 "questions": {

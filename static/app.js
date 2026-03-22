@@ -1,5 +1,13 @@
 /* ReviewLens AI */
 
+// ── Logging ─────────────────────────────────────────────────────────
+
+var _log = {
+  info: function () { console.log("[RL]", ...arguments); },
+  warn: function () { console.warn("[RL]", ...arguments); },
+  error: function () { console.error("[RL]", ...arguments); },
+};
+
 // ── Theme ───────────────────────────────────────────────────────────
 
 (function initTheme() {
@@ -32,20 +40,74 @@ function closeModal() {
 }
 
 function switchTab(btn, tabId) {
-  // Deactivate all tabs
   var tabs = btn.parentElement.querySelectorAll(".modal-tab");
   tabs.forEach(function (t) { t.classList.remove("active"); });
   btn.classList.add("active");
 
-  // Deactivate all content
   var contents = btn.closest(".modal").querySelectorAll(".modal-tab-content");
   contents.forEach(function (c) { c.classList.remove("active"); });
   document.getElementById(tabId).classList.add("active");
 }
 
-// Close modal on Escape
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape") closeModal();
+});
+
+// ── Session menu ────────────────────────────────────────────────────
+
+function toggleSessionMenu(e, btn) {
+  e.preventDefault();
+  e.stopPropagation();
+  var wrap = btn.closest(".session-menu-wrap");
+  var wasOpen = wrap.classList.contains("open");
+
+  document.querySelectorAll(".session-menu-wrap.open").forEach(function (el) {
+    el.classList.remove("open");
+  });
+
+  if (!wasOpen) wrap.classList.add("open");
+}
+
+function archiveSession(e, sessionId) {
+  e.preventDefault();
+  e.stopPropagation();
+  _log.info("Archiving session:", sessionId);
+  fetch("/api/sessions/" + sessionId, { method: "DELETE" })
+    .then(function (r) {
+      if (r.ok) {
+        var wrap = document.querySelector(".session-menu-wrap.open");
+        if (wrap) {
+          var item = wrap.closest(".session-item-wrap");
+          item.style.transition = "opacity 0.2s, max-height 0.2s";
+          item.style.opacity = "0";
+          item.style.maxHeight = item.offsetHeight + "px";
+          item.style.overflow = "hidden";
+          setTimeout(function () { item.style.maxHeight = "0"; }, 10);
+          setTimeout(function () {
+            item.remove();
+            if (window.location.pathname.indexOf(sessionId) !== -1) {
+              window.location.href = "/";
+            }
+          }, 220);
+        }
+      }
+    });
+}
+
+document.addEventListener("click", function () {
+  document.querySelectorAll(".session-menu-wrap.open").forEach(function (el) {
+    el.classList.remove("open");
+  });
+});
+
+document.querySelectorAll(".session-menu-wrap").forEach(function (wrap) {
+  var leaveTimer = null;
+  wrap.addEventListener("mouseleave", function () {
+    leaveTimer = setTimeout(function () { wrap.classList.remove("open"); }, 300);
+  });
+  wrap.addEventListener("mouseenter", function () {
+    if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; }
+  });
 });
 
 // ── File upload drag & drop ─────────────────────────────────────────
@@ -55,9 +117,7 @@ document.addEventListener("keydown", function (e) {
   var fileInput = document.getElementById("file");
   if (!dropZone || !fileInput) return;
 
-  dropZone.addEventListener("click", function () {
-    fileInput.click();
-  });
+  dropZone.addEventListener("click", function () { fileInput.click(); });
 
   dropZone.addEventListener("dragover", function (e) {
     e.preventDefault();
@@ -78,9 +138,7 @@ document.addEventListener("keydown", function (e) {
   });
 
   fileInput.addEventListener("change", function () {
-    if (fileInput.files.length) {
-      showFileName(fileInput.files[0].name);
-    }
+    if (fileInput.files.length) showFileName(fileInput.files[0].name);
   });
 
   function showFileName(name) {
@@ -136,11 +194,13 @@ var chatInput = document.getElementById("chat-input");
 var chatForm = document.getElementById("chat-form");
 var sendBtn = document.getElementById("send-btn");
 var eventSource = null;
+var _sending = false;
+
+_log.info("Chat init — SESSION_ID:", typeof SESSION_ID !== "undefined" ? SESSION_ID : "(none)",
+          "chatForm:", !!chatForm, "chatInput:", !!chatInput);
 
 function scrollToBottom() {
-  if (chatMessages) {
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
+  if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 if (chatInput) {
@@ -152,19 +212,46 @@ if (chatInput) {
   chatInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      chatForm.dispatchEvent(new Event("submit"));
+      _doSend();
     }
   });
 }
 
+// The form's onsubmit calls this
 function sendMessage(e) {
-  e.preventDefault();
-  if (!chatInput) return;
+  if (e) e.preventDefault();
+  _doSend();
+}
+
+function sendFollowUp(btn) {
+  var question = btn.getAttribute("data-question");
+  _log.info("Follow-up clicked:", question);
+  if (chatInput) {
+    chatInput.value = question;
+    _doSend();
+  }
+}
+
+function _doSend() {
+  if (!chatInput || !SESSION_ID) {
+    _log.error("Cannot send — chatInput:", !!chatInput, "SESSION_ID:", typeof SESSION_ID !== "undefined" ? SESSION_ID : "(undefined)");
+    return;
+  }
   var message = chatInput.value.trim();
-  if (!message) return;
+  if (!message) {
+    _log.warn("Empty message, ignoring");
+    return;
+  }
+  if (_sending) {
+    _log.warn("Already sending, ignoring");
+    return;
+  }
+
+  _sending = true;
+  _log.info("Sending message:", message.substring(0, 80));
 
   chatInput.disabled = true;
-  sendBtn.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
 
   // Remove old follow-ups
   var old = chatMessages.querySelectorAll(".follow-ups");
@@ -187,16 +274,27 @@ function sendMessage(e) {
   chatMessages.appendChild(thinkingDiv);
   scrollToBottom();
 
+  var url = "/chat/" + SESSION_ID + "/send";
   var formData = new FormData();
   formData.append("message", message);
 
-  fetch("/chat/" + SESSION_ID + "/send", { method: "POST", body: formData })
-    .then(function () { listenForResponse(); })
+  _log.info("POST", url);
+
+  fetch(url, { method: "POST", body: formData })
+    .then(function (resp) {
+      _log.info("POST response:", resp.status, resp.statusText);
+      if (!resp.ok) {
+        throw new Error("Server returned " + resp.status);
+      }
+      listenForResponse();
+    })
     .catch(function (err) {
+      _log.error("POST failed:", err.name, err.message);
       removeThinking();
       appendError("Failed to send: " + err.message);
+      _sending = false;
       chatInput.disabled = false;
-      sendBtn.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
     });
 
   chatInput.value = "";
@@ -204,11 +302,17 @@ function sendMessage(e) {
 }
 
 function listenForResponse() {
-  if (eventSource) eventSource.close();
+  if (eventSource) {
+    _log.info("Closing existing EventSource");
+    eventSource.close();
+  }
 
-  eventSource = new EventSource("/chat/" + SESSION_ID + "/stream");
+  var url = "/chat/" + SESSION_ID + "/stream";
+  _log.info("Opening SSE:", url);
+  eventSource = new EventSource(url);
 
   eventSource.addEventListener("tool", function (e) {
+    _log.info("SSE tool event:", e.data);
     var thinking = document.getElementById("thinking-indicator");
     if (thinking) {
       var content = thinking.querySelector(".message-content");
@@ -220,31 +324,41 @@ function listenForResponse() {
   });
 
   eventSource.addEventListener("message", function (e) {
+    _log.info("SSE message event received (" + e.data.length + " chars)");
     removeThinking();
     var temp = document.createElement("div");
     temp.innerHTML = e.data;
     while (temp.firstChild) chatMessages.appendChild(temp.firstChild);
     runChartScripts();
     scrollToBottom();
+    _sending = false;
     chatInput.disabled = false;
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
     chatInput.focus();
   });
 
   eventSource.addEventListener("done", function () {
+    _log.info("SSE done");
     eventSource.close();
     eventSource = null;
     removeThinking();
+    _sending = false;
     chatInput.disabled = false;
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
   });
 
-  eventSource.onerror = function () {
+  eventSource.addEventListener("error", function (e) {
+    _log.error("SSE error event:", e);
+  });
+
+  eventSource.onerror = function (e) {
+    _log.error("SSE connection error — readyState:", eventSource.readyState);
     eventSource.close();
     eventSource = null;
     removeThinking();
+    _sending = false;
     chatInput.disabled = false;
-    sendBtn.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
   };
 }
 
@@ -259,14 +373,6 @@ function appendError(msg) {
   div.innerHTML = '<div class="message-content"><p>' + escapeHtml(msg) + "</p></div>";
   chatMessages.appendChild(div);
   scrollToBottom();
-}
-
-function sendFollowUp(btn) {
-  var question = btn.getAttribute("data-question");
-  if (chatInput) {
-    chatInput.value = question;
-    chatForm.dispatchEvent(new Event("submit"));
-  }
 }
 
 // ── Chart rendering ─────────────────────────────────────────────────
@@ -385,3 +491,37 @@ if (chatMessages) {
 }
 
 scrollToBottom();
+
+// ── Scraping status poll ────────────────────────────────────────────
+
+(function () {
+  var scrapingView = document.getElementById("scraping-view");
+  if (!scrapingView || !SESSION_ID) return;
+
+  var stepNav = document.getElementById("step-navigating");
+  var stepIdx = document.getElementById("step-indexing");
+
+  setTimeout(function () {
+    if (stepNav) stepNav.classList.add("active");
+  }, 3000);
+
+  var poller = setInterval(function () {
+    fetch("/api/status/" + SESSION_ID)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        _log.info("Scrape poll:", data.status);
+        if (data.status === "ready") {
+          if (stepNav) stepNav.classList.add("done");
+          if (stepIdx) { stepIdx.classList.add("active"); stepIdx.classList.add("done"); }
+          clearInterval(poller);
+          setTimeout(function () { window.location.reload(); }, 600);
+        } else if (data.status === "error") {
+          clearInterval(poller);
+          window.location.reload();
+        }
+      })
+      .catch(function () {});
+  }, 3000);
+
+  setTimeout(function () { clearInterval(poller); }, 360000);
+})();
