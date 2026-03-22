@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import json
+import os
 from collections import Counter
 from typing import Any
 
+import anthropic
 from claude_agent_sdk import tool
 
 from .. import vectordb
 from ._helpers import EmitToolFn, CollectSourcesFn
+
+HAIKU_MODEL = "claude-haiku-4-5"
 
 
 def create_data_tools(
@@ -21,7 +25,7 @@ def create_data_tools(
 
     @tool(
         name="search_reviews",
-        description="Semantic search over the ingested review database. Use this to find reviews relevant to the user's question. Returns the most relevant reviews ranked by similarity.",
+        description="Semantic search over the ingested review database. Returns the most relevant reviews ranked by similarity. Set broaden=true for substantive questions — this generates query variants via Haiku, runs them all, and deduplicates for broader coverage.",
         input_schema={
             "type": "object",
             "properties": {
@@ -33,6 +37,11 @@ def create_data_tools(
                     "type": "integer",
                     "description": "Number of results to return (default 10, max 25).",
                     "default": 10,
+                },
+                "broaden": {
+                    "type": "boolean",
+                    "description": "When true, generates 3-4 query variants and merges deduplicated results for broader coverage. Use for any substantive analysis question.",
+                    "default": False,
                 },
                 "min_rating": {
                     "type": "number",
@@ -57,6 +66,7 @@ def create_data_tools(
     async def search_reviews_tool(args: dict[str, Any]) -> dict[str, Any]:
         query = args["query"]
         n = min(args.get("n_results", 10), 25)
+        broaden = args.get("broaden", False)
 
         conditions = []
         if "min_rating" in args:
@@ -74,22 +84,79 @@ def create_data_tools(
         elif len(conditions) == 1:
             where = conditions[0]
 
-        results = vectordb.search_reviews(session_id, query, n_results=n, where=where)
-        collect_sources(results)
+        if broaden:
+            # Generate query variants via Haiku
+            client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+            try:
+                expansion = await client.messages.create(
+                    model=HAIKU_MODEL,
+                    max_tokens=150,
+                    messages=[{
+                        "role": "user",
+                        "content": (
+                            f"Generate 4 alternative search queries for finding customer reviews about: \"{query}\"\n"
+                            "Include synonyms, related phrases, different angles.\n"
+                            "Return ONLY a JSON array of strings."
+                        ),
+                    }],
+                )
+                variants = json.loads(expansion.content[0].text.strip())
+                if not isinstance(variants, list):
+                    variants = []
+            except Exception:
+                variants = []
 
-        await emit_tool(
-            "search_reviews",
-            f"Searched reviews: \"{query}\" — {len(results)} results",
-            {"query": query, "n_results": n},
-            {"result_count": len(results)},
-        )
+            queries = [query] + [v for v in variants[:4] if isinstance(v, str)]
 
-        return {"content": [{"type": "text", "text": json.dumps({
-            "query": query,
-            "result_count": len(results),
-            "results": results,
-            "note": "If no results are relevant, tell the user you couldn't find matching reviews. Do NOT make up information.",
-        })}]}
+            # Run all queries and deduplicate
+            seen_ids: set[str] = set()
+            results: list[dict] = []
+            query_hits: dict[str, int] = {}
+            for q in queries:
+                hits = vectordb.search_reviews(session_id, q, n_results=n, where=where)
+                query_hits[q] = len(hits)
+                for r in hits:
+                    if r["id"] not in seen_ids:
+                        seen_ids.add(r["id"])
+                        results.append(r)
+
+            collect_sources(results)
+
+            coverage = "strong" if len(results) >= 10 else "moderate" if len(results) >= 5 else "thin"
+
+            await emit_tool(
+                "search_reviews",
+                f"Broadened search: \"{query}\" — {len(queries)} variants, {len(results)} unique results ({coverage})",
+                {"query": query, "broaden": True, "variants": queries},
+                {"unique_results": len(results), "coverage": coverage},
+            )
+
+            return {"content": [{"type": "text", "text": json.dumps({
+                "query": query,
+                "broadened": True,
+                "queries_used": queries,
+                "unique_result_count": len(results),
+                "coverage": coverage,
+                "results": results,
+                "note": f"{'Coverage is thin — fewer than 5 unique reviews. Flag this limitation honestly.' if coverage == 'thin' else ''}",
+            })}]}
+        else:
+            results = vectordb.search_reviews(session_id, query, n_results=n, where=where)
+            collect_sources(results)
+
+            await emit_tool(
+                "search_reviews",
+                f"Searched reviews: \"{query}\" — {len(results)} results",
+                {"query": query, "n_results": n},
+                {"result_count": len(results)},
+            )
+
+            return {"content": [{"type": "text", "text": json.dumps({
+                "query": query,
+                "result_count": len(results),
+                "results": results,
+                "note": "If no results are relevant, tell the user you couldn't find matching reviews. Do NOT make up information.",
+            })}]}
 
     @tool(
         name="analyze_sentiment",

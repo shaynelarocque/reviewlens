@@ -435,55 +435,91 @@ function renderChart(canvasId, config) {
   var textColor = getChartTextColor();
   var gridColor = getChartGridColor();
 
-  var datasets = config.data.datasets.map(function (ds, i) {
-    var isPie = config.type === "pie" || config.type === "doughnut";
-    var colors = isPie ? CHART_COLORS.slice(0, ds.data.length) : [CHART_COLORS[i % CHART_COLORS.length]];
-    var borders = isPie ? CHART_BORDERS.slice(0, ds.data.length) : [CHART_BORDERS[i % CHART_BORDERS.length]];
+  // Normalize custom types to Chart.js types
+  var chartType = config.type;
+  var isHorizontal = chartType === "horizontalBar";
+  var isStacked = chartType === "stacked_bar";
+  if (isHorizontal || isStacked) chartType = "bar";
 
-    return {
+  var noScales = chartType === "pie" || chartType === "doughnut" || chartType === "radar";
+  var isRadarOrPie = chartType === "pie" || chartType === "doughnut" || chartType === "radar";
+
+  var datasets = config.data.datasets.map(function (ds, i) {
+    var multiColor = isRadarOrPie;
+    var colors = multiColor ? CHART_COLORS.slice(0, ds.data.length) : [CHART_COLORS[i % CHART_COLORS.length]];
+    var borders = multiColor ? CHART_BORDERS.slice(0, ds.data.length) : [CHART_BORDERS[i % CHART_BORDERS.length]];
+
+    var dsConfig = {
       label: ds.label,
       data: ds.data,
       backgroundColor: colors.length === 1 ? colors[0] : colors,
       borderColor: borders.length === 1 ? borders[0] : borders,
-      borderWidth: config.type === "line" ? 2 : 1,
+      borderWidth: chartType === "line" ? 2 : chartType === "radar" ? 2 : 1,
       tension: 0.3,
-      fill: config.type === "line",
+      fill: chartType === "line" || chartType === "radar",
     };
+
+    if (chartType === "radar") {
+      dsConfig.backgroundColor = (colors.length === 1 ? colors[0] : colors[0]).replace("0.75)", "0.2)");
+      dsConfig.pointBackgroundColor = borders.length === 1 ? borders[0] : borders;
+    }
+
+    return dsConfig;
   });
 
-  new Chart(canvas, {
-    type: config.type,
-    data: { labels: config.data.labels, datasets: datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        title: {
-          display: true,
-          text: config.title,
-          font: { size: 13, weight: "500", family: "'DM Sans', sans-serif" },
-          color: textColor,
-          padding: { bottom: 12 },
-        },
-        legend: {
-          labels: { color: textColor, font: { family: "'DM Sans', sans-serif", size: 11 } },
-        },
+  var scales = undefined;
+  if (!noScales) {
+    var xAxis = {
+      ticks: { color: textColor, font: { family: "'IBM Plex Mono', monospace", size: 10 } },
+      grid: { color: gridColor },
+    };
+    var yAxis = {
+      ticks: { color: textColor, font: { family: "'IBM Plex Mono', monospace", size: 10 } },
+      grid: { color: gridColor },
+      beginAtZero: true,
+    };
+    if (isHorizontal) xAxis.beginAtZero = true;
+    if (isStacked) {
+      xAxis.stacked = true;
+      yAxis.stacked = true;
+    }
+    scales = { x: xAxis, y: yAxis };
+  }
+
+  var chartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      title: {
+        display: true,
+        text: config.title,
+        font: { size: 13, weight: "500", family: "'DM Sans', sans-serif" },
+        color: textColor,
+        padding: { bottom: 12 },
       },
-      scales:
-        config.type !== "pie" && config.type !== "doughnut"
-          ? {
-              x: {
-                ticks: { color: textColor, font: { family: "'IBM Plex Mono', monospace", size: 10 } },
-                grid: { color: gridColor },
-              },
-              y: {
-                ticks: { color: textColor, font: { family: "'IBM Plex Mono', monospace", size: 10 } },
-                grid: { color: gridColor },
-                beginAtZero: true,
-              },
-            }
-          : undefined,
+      legend: {
+        labels: { color: textColor, font: { family: "'DM Sans', sans-serif", size: 11 } },
+      },
     },
+    scales: scales,
+  };
+
+  if (isHorizontal) chartOptions.indexAxis = "y";
+
+  if (chartType === "radar") {
+    chartOptions.scales = {
+      r: {
+        ticks: { color: textColor, font: { size: 9 }, backdropColor: "transparent" },
+        grid: { color: gridColor },
+        pointLabels: { color: textColor, font: { family: "'DM Sans', sans-serif", size: 10 } },
+      },
+    };
+  }
+
+  new Chart(canvas, {
+    type: chartType,
+    data: { labels: config.data.labels, datasets: datasets },
+    options: chartOptions,
   });
 }
 

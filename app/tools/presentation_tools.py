@@ -25,7 +25,7 @@ def create_presentation_tools(
             "properties": {
                 "chart_type": {
                     "type": "string",
-                    "enum": ["bar", "line", "pie", "doughnut"],
+                    "enum": ["bar", "horizontalBar", "stacked_bar", "line", "pie", "doughnut", "radar", "scatter"],
                     "description": "The type of chart to generate.",
                 },
                 "title": {
