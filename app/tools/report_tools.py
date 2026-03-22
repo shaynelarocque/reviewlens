@@ -1,13 +1,16 @@
-"""Report and scope tools — save findings, get report, check scope."""
+"""Report and scope tools — save findings, get report, compile PDF, check scope."""
 
 from __future__ import annotations
 
 import json
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from claude_agent_sdk import tool
 
 from .. import store, vectordb
+from ..pdf import generate_pdf
 from ._helpers import EmitToolFn
 
 
@@ -146,4 +149,88 @@ def create_report_tools(session_id: str, emit_tool: EmitToolFn) -> list:
             }.get(status, ""),
         })}]}
 
-    return [save_to_report_tool, get_report_tool, check_scope_tool]
+    @tool(
+        name="compile_report",
+        description="Generate a downloadable PDF report from your assembled analysis. Call this when the user explicitly asks for a report/PDF. Pass the full report as markdown content with chart configs. Do NOT call this during the initial auto-analysis — only on explicit user request.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "Report title, e.g. 'Sony WH-1000XM5 Review Intelligence Report'.",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The full report as markdown. Assemble from get_report findings and the report-structure knowledge file.",
+                },
+                "charts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {"type": "string"},
+                            "title": {"type": "string"},
+                            "data": {
+                                "type": "object",
+                                "properties": {
+                                    "labels": {"type": "array", "items": {"type": "string"}},
+                                    "datasets": {"type": "array"},
+                                },
+                            },
+                        },
+                    },
+                    "description": "Optional chart configs to render in the PDF (same format as generate_chart). Use [chart:N] markers in the content to position them.",
+                },
+            },
+            "required": ["title", "content"],
+        },
+    )
+    async def compile_report_tool(args: dict[str, Any]) -> dict[str, Any]:
+        title = args["title"]
+        content = args["content"]
+        charts = args.get("charts", [])
+
+        session = store.load_session(session_id)
+        if not session:
+            return {"content": [{"type": "text", "text": json.dumps({"error": "Session not found."})}]}
+
+        try:
+            pdf_bytes = generate_pdf(
+                title=title,
+                content_md=content,
+                summary=session.summary,
+                charts=charts,
+            )
+
+            # Save to data directory
+            report_path = Path(store._session_dir(session_id)) / "report.pdf"
+            report_path.write_bytes(pdf_bytes)
+
+            # Update session metadata
+            session.report_generated_at = datetime.utcnow()
+            store.save_session(session)
+
+            download_url = f"/api/report/{session_id}/download"
+
+            await emit_tool(
+                "compile_report",
+                f"Report compiled: {title} ({len(pdf_bytes) // 1024}KB PDF)",
+                {"title": title},
+                {"size_kb": len(pdf_bytes) // 1024},
+            )
+
+            return {"content": [{"type": "text", "text": json.dumps({
+                "success": True,
+                "title": title,
+                "download_url": download_url,
+                "size_kb": len(pdf_bytes) // 1024,
+                "instruction": "Present the download link to the user. The system will render it as a download card.",
+            })}]}
+
+        except Exception as e:
+            await emit_tool("compile_report", f"Report compilation failed: {e}", {"title": title})
+            return {"content": [{"type": "text", "text": json.dumps({
+                "error": f"Failed to compile PDF: {str(e)}",
+            })}]}
+
+    return [save_to_report_tool, get_report_tool, compile_report_tool, check_scope_tool]

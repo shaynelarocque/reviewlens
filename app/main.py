@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
 import os
 import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sse_starlette.sse import EventSourceResponse
@@ -50,6 +52,38 @@ _INITIAL_ANALYSIS_PROMPT = (
     "Consult the knowledge base (list_knowledge_files → read_knowledge_file) "
     "if you need analytical frameworks for your analysis."
 )
+
+
+async def _generate_workspace_name(session_id: str, reviews: list) -> None:
+    """Use Haiku to generate a concise workspace name from review samples."""
+    try:
+        import anthropic
+
+        sample_texts = [r.get("text", r.text if hasattr(r, "text") else "")[:150] for r in reviews[:8]]
+        sample_block = "\n---\n".join(sample_texts)
+
+        client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        resp = await client.messages.create(
+            model="claude-haiku-4-5",
+            max_tokens=30,
+            messages=[{
+                "role": "user",
+                "content": (
+                    f"Based on these review samples, generate a short workspace name (2-5 words) "
+                    f"that captures what's being reviewed. Examples: 'Bella Napoli Reviews', "
+                    f"'AirPods Pro Feedback', 'Hilton Downtown Analysis'. Return ONLY the name.\n\n{sample_block}"
+                ),
+            }],
+        )
+        name = resp.content[0].text.strip().strip('"\'')
+        if name and len(name) < 60:
+            session = store.load_session(session_id)
+            if session:
+                session.product_name = name
+                session.summary.product_name = name
+                store.save_session(session)
+    except Exception:
+        pass  # Keep the original name on failure
 
 
 def _trigger_auto_analysis(session_id: str, session: Session) -> None:
@@ -177,7 +211,8 @@ async def upload_csv(
     store.update_summary(session_id, summary)
     store.set_status(session_id, "ready")
 
-    # Kick off auto-analysis
+    # Name the workspace and kick off auto-analysis
+    await _generate_workspace_name(session_id, reviews)
     session = store.load_session(session_id)
     if session:
         _trigger_auto_analysis(session_id, session)
@@ -242,7 +277,8 @@ async def load_sample(
     store.update_summary(session_id, summary)
     store.set_status(session_id, "ready")
 
-    # Kick off auto-analysis
+    # Name the workspace and kick off auto-analysis
+    await _generate_workspace_name(session_id, reviews)
     session = store.load_session(session_id)
     if session:
         _trigger_auto_analysis(session_id, session)
@@ -292,7 +328,7 @@ async def _run_scrape(session_id: str, url: str, product_name: str, platform: st
 
         if not reviews:
             store.set_status(session_id, "error")
-            await _emit(session_id, "No reviews could be extracted from that URL.", "error")
+            await emit(session_id, "No reviews could be extracted from that URL.", "error")
             return
 
         summary = build_summary(reviews, source_type="url", product_name=product_name, platform=platform)
@@ -301,11 +337,17 @@ async def _run_scrape(session_id: str, url: str, product_name: str, platform: st
         summary.total_reviews = indexed
         store.update_summary(session_id, summary)
         store.set_status(session_id, "ready")
-        await _emit(session_id, f"Scraping complete — {indexed} reviews indexed.", "info")
+        await emit(session_id, f"Scraping complete — {indexed} reviews indexed.", "info")
+
+        # Name the workspace and kick off auto-analysis
+        await _generate_workspace_name(session_id, reviews)
+        session = store.load_session(session_id)
+        if session:
+            _trigger_auto_analysis(session_id, session)
 
     except Exception as e:
         store.set_status(session_id, "error")
-        await _emit(session_id, f"Scraping failed: {e}", "error")
+        await emit(session_id, f"Scraping failed: {e}", "error")
 
 
 # ── Session status polling (for scraping progress) ───────────────────
@@ -316,6 +358,74 @@ async def get_status(session_id: str):
     if not session:
         return JSONResponse({"status": "not_found"}, status_code=404)
     return JSONResponse({"status": session.status})
+
+
+# ── Report PDF download ──────────────────────────────────────────────
+
+@app.get("/api/report/{session_id}/download")
+async def download_report(session_id: str):
+    """Serve the generated PDF report."""
+    session = store.load_session(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+
+    from pathlib import Path
+    report_path = Path(store._session_dir(session_id)) / "report.pdf"
+    if not report_path.exists():
+        return JSONResponse({"error": "No report generated yet"}, status_code=404)
+
+    filename = f"{session.product_name or 'report'}_report.pdf".replace(" ", "_")
+    return StreamingResponse(
+        open(report_path, "rb"),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── CSV download ─────────────────────────────────────────────────────
+
+@app.get("/api/sessions/{session_id}/csv")
+async def download_csv(session_id: str):
+    """Download the session's reviews as a CSV file."""
+    session = store.load_session(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+
+    reviews = store.load_reviews_json(session_id)
+    if not reviews:
+        return JSONResponse({"error": "No reviews found"}, status_code=404)
+
+    # Collect all metadata keys across reviews for columns
+    meta_keys: list[str] = []
+    seen: set[str] = set()
+    for r in reviews:
+        for k in r.get("metadata", {}):
+            if k not in seen:
+                seen.add(k)
+                meta_keys.append(k)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    # Header
+    columns = ["text"] + meta_keys
+    writer.writerow(columns)
+
+    # Rows
+    for r in reviews:
+        meta = r.get("metadata", {})
+        row = [r.get("text", "")]
+        for k in meta_keys:
+            row.append(meta.get(k, ""))
+        writer.writerow(row)
+
+    buf.seek(0)
+    filename = f"{session.product_name or 'reviews'}.csv".replace(" ", "_")
+    return StreamingResponse(
+        buf,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── Archive (delete) session ──────────────────────────────────────────

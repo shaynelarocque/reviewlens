@@ -68,5 +68,6 @@ class Session(BaseModel):
     summary: IngestionSummary = Field(default_factory=IngestionSummary)
     messages: list[ChatMessage] = Field(default_factory=list)
     report_findings: dict[str, list[str]] = Field(default_factory=dict)
+    report_generated_at: datetime | None = None
     status: str = "pending"  # pending, ready, error
     created_at: datetime = Field(default_factory=datetime.utcnow)

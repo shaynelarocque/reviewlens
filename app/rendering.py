@@ -97,7 +97,7 @@ def _render_inline_charts(html: str, charts: list[dict[str, Any]]) -> tuple[str,
         if idx < len(charts) and idx not in placed:
             placed.add(idx)
             return _render_chart_html(charts[idx])
-        return match.group(0)
+        return ""  # Strip unmatched markers
 
     html = re.sub(r'\[chart:(\d+)\]', _replace, html)
 
@@ -107,12 +107,45 @@ def _render_inline_charts(html: str, charts: list[dict[str, Any]]) -> tuple[str,
         if idx < len(charts) and idx not in placed:
             placed.add(idx)
             return _render_chart_html(charts[idx])
-        return match.group(0)
+        return ""  # Strip unmatched markers
 
     html = re.sub(r'<p>\[chart:(\d+)\]</p>', _replace_wrapped, html)
 
     leftovers = [c for i, c in enumerate(charts) if i not in placed]
     return html, leftovers
+
+
+def _render_download_cards(html: str) -> str:
+    """Replace report download links with styled download cards."""
+    def _replace(match):
+        url = match.group(1)
+        return (
+            f'<div class="report-download-card">'
+            f'<div class="report-card-icon">'
+            f'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">'
+            f'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>'
+            f'<polyline points="14 2 14 8 20 8"/>'
+            f'<line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'
+            f'</svg></div>'
+            f'<div class="report-card-body">'
+            f'<span class="report-card-title">Analysis Report Ready</span>'
+            f'<span class="report-card-desc">PDF report compiled and ready for download</span>'
+            f'</div>'
+            f'<a href="{url}" class="report-card-btn" download>Download PDF</a>'
+            f'</div>'
+        )
+    # Match markdown-rendered links pointing to report download
+    html = re.sub(
+        r'<a href="(/api/report/[^"]+/download)"[^>]*>[^<]*</a>',
+        _replace, html
+    )
+    # Also match raw URLs in text
+    html = re.sub(
+        r'(?<!")(\/api\/report\/[a-f0-9-]+\/download)(?!")',
+        lambda m: _replace(m) if '<a' not in html[max(0,m.start()-30):m.start()] else m.group(0),
+        html
+    )
+    return html
 
 
 def render_message(msg: ChatMessage) -> str:
@@ -134,6 +167,7 @@ def render_message(msg: ChatMessage) -> str:
             extensions=["tables", "fenced_code"],
         )
         content_html = _render_citations(content_html, msg.sources)
+        content_html = _render_download_cards(content_html)
     else:
         content_html = f"<p>{escaped}</p>"
 

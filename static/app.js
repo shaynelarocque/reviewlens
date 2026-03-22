@@ -556,7 +556,16 @@ function escapeHtml(str) {
 }
 
 if (chatMessages) {
-  var observer = new MutationObserver(scrollToBottom);
+  var observer = new MutationObserver(function (mutations) {
+    // Only auto-scroll when new child nodes are added (new messages),
+    // not when existing elements change (e.g. toggling chart data)
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].type === "childList" && mutations[i].addedNodes.length > 0) {
+        scrollToBottom();
+        return;
+      }
+    }
+  });
   observer.observe(chatMessages, { childList: true, subtree: true });
 }
 

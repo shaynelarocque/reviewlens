@@ -10,3 +10,5 @@ python-multipart
 python-dotenv
 markdown
 markupsafe
+fpdf2
+matplotlib

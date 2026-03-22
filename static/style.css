@@ -322,6 +322,89 @@ html.light .new-analysis-btn {
     color: var(--text-3);
 }
 
+.dataset-actions {
+    display: flex;
+    gap: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+.dataset-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    color: var(--text-2);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.dataset-download:hover {
+    color: var(--accent);
+}
+
+.report-download {
+    color: var(--accent);
+}
+
+/* ── Report Download Card ─────────────────────────────────────── */
+
+.report-download-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin: 0.8rem 0;
+    background: var(--bg-2);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-lg);
+}
+
+.report-card-icon {
+    flex-shrink: 0;
+    color: var(--accent);
+}
+
+.report-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.report-card-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-0);
+}
+
+.report-card-desc {
+    font-size: 0.72rem;
+    color: var(--text-2);
+}
+
+.report-card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.8rem;
+    background: var(--accent);
+    color: #0d1117;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.report-card-btn:hover {
+    opacity: 0.85;
+}
+
 /* Session list */
 
 .session-list {
