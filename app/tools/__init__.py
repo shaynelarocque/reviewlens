@@ -19,6 +19,7 @@ def create_review_tools_server(
     cited_sources: list[dict] | None = None,
     chart_accumulator: list[dict] | None = None,
     follow_up_accumulator: list[str] | None = None,
+    timeline: list[dict] | None = None,
 ):
     """Create the MCP server with all review analysis tools.
 
@@ -30,7 +31,7 @@ def create_review_tools_server(
     if cited_sources is not None:
         seen_source_ids.update(s.get("id", "") for s in cited_sources)
 
-    emit_tool = make_emit_tool(session_id, emit_fn, tool_records)
+    emit_tool = make_emit_tool(session_id, emit_fn, tool_records, timeline)
     collect_sources = make_collect_sources(cited_sources, seen_source_ids)
 
     # Collect all tools from each module

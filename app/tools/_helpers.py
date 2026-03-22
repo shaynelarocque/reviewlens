@@ -20,6 +20,7 @@ def make_emit_tool(
     session_id: str,
     emit_fn: EmitFn,
     tool_records: list[dict] | None,
+    timeline: list[dict] | None = None,
 ) -> EmitToolFn:
     """Create a bound _emit_tool helper that closes over session state."""
 
@@ -37,6 +38,8 @@ def make_emit_tool(
         }
         if tool_records is not None:
             tool_records.append(record)
+        if timeline is not None:
+            timeline.append({"type": "tool", **record})
         payload = json.dumps(record)
         await emit_fn(session_id, payload, "tool")
 

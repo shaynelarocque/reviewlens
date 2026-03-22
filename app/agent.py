@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
@@ -14,7 +13,7 @@ from claude_agent_sdk import (
     TextBlock,
 )
 
-from .models import ChatMessage, IngestionSummary, ToolCallRecord
+from .models import ChatMessage, IngestionSummary, TimelineStep
 from .prompts import build_system_prompt
 from .tools import create_review_tools_server
 
@@ -106,6 +105,7 @@ async def handle_message(
     cited_sources: list[dict] = []
     charts: list[dict[str, Any]] = []
     follow_ups: list[str] = []
+    timeline: list[dict] = []
 
     # Create per-request MCP server (closure over session_id)
     server = create_review_tools_server(
@@ -115,6 +115,7 @@ async def handle_message(
         cited_sources=cited_sources,
         chart_accumulator=charts,
         follow_up_accumulator=follow_ups,
+        timeline=timeline,
     )
 
     options = ClaudeAgentOptions(
@@ -126,7 +127,10 @@ async def handle_message(
         mcp_servers={"reviewlens": server},
     )
 
-    response_text = ""
+    # Collect text chunks in order — interleaved with tool steps in timeline
+    text_chunks: list[str] = []
+    current_chunk: list[str] = []
+    last_tool_count = 0
 
     try:
         async with ClaudeSDKClient(options=options) as client:
@@ -135,20 +139,54 @@ async def handle_message(
                 if isinstance(message, AssistantMessage):
                     for block in message.content:
                         if isinstance(block, TextBlock) and block.text.strip():
-                            response_text += block.text.strip() + "\n"
+                            # Check if tools fired since last text — if so,
+                            # the previous text was thinking (it preceded tool calls)
+                            if len(tool_records) > last_tool_count and current_chunk:
+                                thinking_text = "\n".join(current_chunk).strip()
+                                if thinking_text:
+                                    timeline.append({
+                                        "type": "thinking",
+                                        "text": thinking_text,
+                                    })
+                                text_chunks.append(thinking_text)
+                                current_chunk = []
+                                last_tool_count = len(tool_records)
+
+                            current_chunk.append(block.text.strip())
+
                 elif isinstance(message, ResultMessage):
-                    if message.result and not response_text.strip():
-                        response_text = message.result
+                    if message.result and not current_chunk and not text_chunks:
+                        current_chunk.append(message.result)
 
     except Exception as e:
-        response_text = f"I encountered an error processing your question. Please try again.\n\nError: {str(e)}"
+        current_chunk = [f"I encountered an error processing your question. Please try again.\n\nError: {str(e)}"]
         await emit_fn(session_id, f"Agent error: {e}", "error")
+
+    # Flush remaining text
+    final_text = "\n".join(current_chunk).strip()
+
+    # If there were tool calls after the last chunk flush, the chunks before
+    # tools were thinking. If tools fired but we never flushed, check now.
+    if len(tool_records) > last_tool_count and text_chunks:
+        # Tools fired after the last flush — that last chunk was thinking too,
+        # and final_text is the actual output
+        pass
+    elif not text_chunks and final_text:
+        # Only one chunk, no thinking — final_text is the output
+        pass
+    elif text_chunks and final_text:
+        # Multiple chunks: earlier ones are in timeline already,
+        # final_text is the output
+        pass
+
+    # The output content is always the last text chunk
+    content = final_text
 
     return ChatMessage(
         role="assistant",
-        content=response_text.strip(),
+        content=content,
         charts=charts,
         follow_ups=follow_ups,
-        tool_calls=[ToolCallRecord(**r) for r in tool_records],
+        timeline=[TimelineStep(**step) for step in timeline],
         sources=cited_sources,
     )

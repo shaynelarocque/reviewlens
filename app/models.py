@@ -33,11 +33,15 @@ class IngestionSummary(BaseModel):
     source_type: str = ""  # "csv" or "url"
 
 
-class ToolCallRecord(BaseModel):
-    """A single tool invocation record for the activity accordion."""
+class TimelineStep(BaseModel):
+    """A single step in the agent's work process — thinking or tool call."""
 
-    tool_name: str
-    summary: str
+    type: str  # "thinking" or "tool"
+    # For thinking steps
+    text: str = ""
+    # For tool steps
+    tool_name: str = ""
+    summary: str = ""
     inputs: dict[str, Any] = Field(default_factory=dict)
     output_summary: dict[str, Any] = Field(default_factory=dict)
 
@@ -50,7 +54,7 @@ class ChatMessage(BaseModel):
     system_initiated: bool = False
     charts: list[dict[str, Any]] = Field(default_factory=list)
     follow_ups: list[str] = Field(default_factory=list)
-    tool_calls: list[ToolCallRecord] = Field(default_factory=list)
+    timeline: list[TimelineStep] = Field(default_factory=list)
     sources: list[dict[str, Any]] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 

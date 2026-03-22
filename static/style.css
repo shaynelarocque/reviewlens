@@ -845,6 +845,20 @@ details[open] > .tool-accordion-header .tool-accordion-chevron {
     font-size: 0.75rem;
 }
 
+.timeline-thinking {
+    padding: 0.3rem 0 0.3rem 0.6rem;
+    border-left: 2px solid var(--bg-4);
+    margin: 0.15rem 0;
+}
+
+.timeline-thinking p {
+    margin: 0;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--text-3);
+    line-height: 1.4;
+}
+
 .tool-call-detail {
     width: 100%;
     font-family: var(--mono);

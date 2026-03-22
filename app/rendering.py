@@ -139,31 +139,38 @@ def render_message(msg: ChatMessage) -> str:
 
     parts = [f'<div class="message {role_class}">']
 
-    # ── Thinking zone: tool accordion (collapsed, at top) ────────
-    if msg.role == "assistant" and msg.tool_calls:
-        n = len(msg.tool_calls)
+    # ── Timeline: thinking + tool calls interleaved (collapsed) ────
+    if msg.role == "assistant" and msg.timeline:
+        n = len(msg.timeline)
         parts.append('<details class="tool-accordion">')
         parts.append(
             f'<summary class="tool-accordion-header">'
             f'<svg class="tool-accordion-chevron" width="12" height="12" viewBox="0 0 24 24" '
             f'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
             f'<polyline points="6 9 12 15 18 9"/></svg>'
-            f' {n} tool call{"s" if n != 1 else ""} — View analysis process</summary>'
+            f' {n} step{"s" if n != 1 else ""} — View analysis process</summary>'
         )
         parts.append('<div class="tool-accordion-body">')
-        for tc in msg.tool_calls:
-            tool_label = tc.tool_name.replace("_", " ").title()
-            parts.append('<div class="tool-call-item">')
-            parts.append(f'<span class="tool-call-name">{html_module.escape(tool_label)}</span>')
-            parts.append(f'<span class="tool-call-summary">{html_module.escape(tc.summary)}</span>')
-            if tc.inputs:
-                detail_parts = []
-                for k, v in tc.inputs.items():
-                    if k in ("query", "operation", "chart_type", "title", "section", "name", "question", "keyword") and v:
-                        detail_parts.append(f'{k}: {html_module.escape(str(v))}')
-                if detail_parts:
-                    parts.append(f'<span class="tool-call-detail">{" · ".join(detail_parts)}</span>')
-            parts.append('</div>')
+        for step in msg.timeline:
+            if step.type == "thinking" and step.text.strip():
+                parts.append(
+                    f'<div class="timeline-thinking">'
+                    f'<p>{html_module.escape(step.text[:500])}</p>'
+                    f'</div>'
+                )
+            elif step.type == "tool":
+                tool_label = step.tool_name.replace("_", " ").title()
+                parts.append('<div class="tool-call-item">')
+                parts.append(f'<span class="tool-call-name">{html_module.escape(tool_label)}</span>')
+                parts.append(f'<span class="tool-call-summary">{html_module.escape(step.summary)}</span>')
+                if step.inputs:
+                    detail_parts = []
+                    for k, v in step.inputs.items():
+                        if k in ("query", "operation", "chart_type", "title", "section", "name", "question", "keyword") and v:
+                            detail_parts.append(f'{k}: {html_module.escape(str(v))}')
+                    if detail_parts:
+                        parts.append(f'<span class="tool-call-detail">{" · ".join(detail_parts)}</span>')
+                parts.append('</div>')
         parts.append('</div></details>')
 
     # ── Output zone: text with inline charts ─────────────────────
