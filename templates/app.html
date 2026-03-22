@@ -155,15 +155,7 @@
             <!-- Chat view -->
             <div class="chat-messages" id="chat-messages">
                 {% for msg in messages %}
-                    {% if msg.role == 'assistant' %}
-                    <div class="message assistant-message">
-                        <div class="message-content">{{ msg.content }}</div>
-                    </div>
-                    {% else %}
-                    <div class="message user-message">
-                        <div class="message-content"><p>{{ msg.content }}</p></div>
-                    </div>
-                    {% endif %}
+                    {{ msg|render_message }}
                 {% endfor %}
 
                 {% if not messages %}

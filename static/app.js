@@ -195,6 +195,7 @@ var chatForm = document.getElementById("chat-form");
 var sendBtn = document.getElementById("send-btn");
 var eventSource = null;
 var _sending = false;
+var _toolCalls = [];
 
 _log.info("Chat init — SESSION_ID:", typeof SESSION_ID !== "undefined" ? SESSION_ID : "(none)",
           "chatForm:", !!chatForm, "chatInput:", !!chatInput);
@@ -248,6 +249,7 @@ function _doSend() {
   }
 
   _sending = true;
+  _toolCalls = [];
   _log.info("Sending message:", message.substring(0, 80));
 
   chatInput.disabled = true;
@@ -312,13 +314,32 @@ function listenForResponse() {
   eventSource = new EventSource(url);
 
   eventSource.addEventListener("tool", function (e) {
-    _log.info("SSE tool event:", e.data);
+    var data;
+    try { data = JSON.parse(e.data); } catch (_) { data = { summary: e.data, tool_name: "tool" }; }
+    _toolCalls.push(data);
+    _log.info("SSE tool event:", data.summary || data.tool_name);
+
     var thinking = document.getElementById("thinking-indicator");
     if (thinking) {
       var content = thinking.querySelector(".message-content");
+      var items = "";
+      _toolCalls.forEach(function (tc) {
+        var name = (tc.tool_name || "tool").replace(/_/g, " ");
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        items += '<div class="tool-call-item">' +
+          '<span class="tool-call-name">' + escapeHtml(name) + '</span>' +
+          '<span class="tool-call-summary">' + escapeHtml(tc.summary || "") + '</span>' +
+          '</div>';
+      });
       content.innerHTML =
         '<div class="thinking-dots"><span></span><span></span><span></span></div>' +
-        '<div class="tool-activity">' + escapeHtml(e.data) + "</div>";
+        '<details class="tool-accordion" open>' +
+        '<summary class="tool-accordion-header">' +
+        '<svg class="tool-accordion-chevron" width="12" height="12" viewBox="0 0 24 24" ' +
+        'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+        '<polyline points="6 9 12 15 18 9"/></svg>' +
+        ' ' + _toolCalls.length + ' tool call' + (_toolCalls.length !== 1 ? 's' : '') +
+        '</summary><div class="tool-accordion-body">' + items + '</div></details>';
       scrollToBottom();
     }
   });
@@ -477,6 +498,19 @@ function runChartScripts() {
   });
 }
 
+function toggleChartData(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var btn = el.previousElementSibling;
+  if (el.style.display === "none") {
+    el.style.display = "block";
+    if (btn && btn.classList.contains("chart-data-toggle")) btn.textContent = "Hide data";
+  } else {
+    el.style.display = "none";
+    if (btn && btn.classList.contains("chart-data-toggle")) btn.textContent = "View data";
+  }
+}
+
 // ── Utilities ────────────────────────────────────────────────────────
 
 function escapeHtml(str) {
@@ -491,6 +525,7 @@ if (chatMessages) {
 }
 
 scrollToBottom();
+runChartScripts();
 
 // ── Scraping status poll ────────────────────────────────────────────
 

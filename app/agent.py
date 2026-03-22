@@ -10,16 +10,80 @@ from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
     ClaudeSDKClient,
-    HookMatcher,
     ResultMessage,
     TextBlock,
 )
 
-from .models import ChatMessage, IngestionSummary
+from .models import ChatMessage, IngestionSummary, ToolCallRecord
 from .prompts import build_system_prompt
 from .tools import create_review_tools_server
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
+
+# How many recent messages to pass in full before summarising
+RECENT_WINDOW = 10
+# Max older messages to summarise
+SUMMARY_WINDOW = 30
+
+
+def _build_conversation_context(
+    conversation_history: list[ChatMessage],
+    user_message: str,
+) -> str:
+    """Build structured conversation context for the agent.
+
+    Strategy:
+    - Recent messages (last RECENT_WINDOW) are passed in full with role labels
+    - Older messages are compressed into a topic summary
+    - A session context block tracks what's been explored
+    """
+    total = len(conversation_history)
+    parts: list[str] = []
+
+    if total > 0:
+        # Split into older and recent
+        recent_start = max(0, total - RECENT_WINDOW)
+        older = conversation_history[max(0, recent_start - SUMMARY_WINDOW):recent_start]
+        recent = conversation_history[recent_start:]
+
+        # Summarise older messages as topic bullets
+        if older:
+            topics = _extract_topics(older)
+            parts.append(
+                "## Session Context\n"
+                f"This is message {total + 1} in the conversation. "
+                f"Earlier topics explored:\n{topics}"
+            )
+
+        # Pass recent messages with structure
+        if recent:
+            lines = []
+            for msg in recent:
+                role = "User" if msg.role == "user" else "Assistant"
+                # Truncate very long assistant responses in context
+                content = msg.content
+                if msg.role == "assistant" and len(content) > 800:
+                    content = content[:800] + "\n[... truncated for context ...]"
+                lines.append(f"**{role}:** {content}")
+            parts.append("## Recent Conversation\n" + "\n\n".join(lines))
+
+    parts.append(f"## Current Question\n{user_message}")
+    return "\n\n".join(parts)
+
+
+def _extract_topics(messages: list[ChatMessage]) -> str:
+    """Extract topic bullets from older messages for context summary."""
+    topics: list[str] = []
+    for msg in messages:
+        if msg.role == "user":
+            # Use first 120 chars of user messages as topic indicators
+            text = msg.content.strip()
+            if len(text) > 120:
+                text = text[:120] + "..."
+            topics.append(f"- {text}")
+    if not topics:
+        return "- (general exploration)"
+    return "\n".join(topics)
 
 
 async def handle_message(
@@ -34,43 +98,24 @@ async def handle_message(
     model = os.getenv("CLAUDE_MODEL", DEFAULT_MODEL)
     system_prompt = build_system_prompt(summary)
 
-    # Build conversation context for the agent
-    messages_for_context = []
-    for msg in conversation_history[-20:]:  # Last 20 messages for context window
-        messages_for_context.append(f"{'User' if msg.role == 'user' else 'Assistant'}: {msg.content}")
+    # Build structured conversation context
+    prompt = _build_conversation_context(conversation_history, user_message)
 
-    prompt_parts = []
-    if messages_for_context:
-        prompt_parts.append("Previous conversation:\n" + "\n".join(messages_for_context))
-    prompt_parts.append(f"User: {user_message}")
-    prompt = "\n\n".join(prompt_parts)
+    # Accumulators populated by tools via closure
+    tool_records: list[dict] = []
+    cited_sources: list[dict] = []
+    charts: list[dict[str, Any]] = []
+    follow_ups: list[str] = []
 
     # Create per-request MCP server (closure over session_id)
     server = create_review_tools_server(
         session_id=session_id,
         emit_fn=emit_fn,
+        tool_records=tool_records,
+        cited_sources=cited_sources,
+        chart_accumulator=charts,
+        follow_up_accumulator=follow_ups,
     )
-
-    # Track tool outputs for charts and follow-ups
-    charts: list[dict[str, Any]] = []
-    follow_ups: list[str] = []
-
-    async def post_tool_hook(input_data, tool_use_id, context):
-        """Intercept tool results to extract charts and follow-ups."""
-        # The tool result is in context
-        try:
-            result = context.get("result", {})
-            content = result.get("content", [])
-            for block in content:
-                if block.get("type") == "text":
-                    data = json.loads(block["text"])
-                    if "chart" in data:
-                        charts.append(data["chart"])
-                    if "follow_ups" in data:
-                        follow_ups.extend(data["follow_ups"])
-        except (json.JSONDecodeError, KeyError, TypeError):
-            pass
-        return {}
 
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
@@ -79,9 +124,6 @@ async def handle_message(
         max_turns=15,
         model=model,
         mcp_servers={"reviewlens": server},
-        hooks={
-            "PostToolUse": [HookMatcher(matcher=".*", hooks=[post_tool_hook])],
-        },
     )
 
     response_text = ""
@@ -107,4 +149,6 @@ async def handle_message(
         content=response_text.strip(),
         charts=charts,
         follow_ups=follow_ups,
+        tool_calls=[ToolCallRecord(**r) for r in tool_records],
+        sources=cited_sources,
     )

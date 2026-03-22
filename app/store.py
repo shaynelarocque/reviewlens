@@ -62,6 +62,22 @@ def get_messages(session_id: str) -> list[ChatMessage]:
     return session.messages if session else []
 
 
+# ── Report findings ──────────────────────────────────────────────────
+
+def append_finding(session_id: str, section: str, content: str) -> None:
+    """Append a finding to a report section."""
+    session = load_session(session_id)
+    if session:
+        session.report_findings.setdefault(section, []).append(content)
+        save_session(session)
+
+
+def get_findings(session_id: str) -> dict[str, list[str]]:
+    """Get all saved report findings for a session."""
+    session = load_session(session_id)
+    return session.report_findings if session else {}
+
+
 # ── Reviews (raw JSON for reference) ────────────────────────────────
 
 def save_reviews_json(session_id: str, reviews: list[dict]) -> None:

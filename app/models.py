@@ -33,6 +33,15 @@ class IngestionSummary(BaseModel):
     source_type: str = ""  # "csv" or "url"
 
 
+class ToolCallRecord(BaseModel):
+    """A single tool invocation record for the activity accordion."""
+
+    tool_name: str
+    summary: str
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    output_summary: dict[str, Any] = Field(default_factory=dict)
+
+
 class ChatMessage(BaseModel):
     """A single chat message."""
 
@@ -40,6 +49,8 @@ class ChatMessage(BaseModel):
     content: str
     charts: list[dict[str, Any]] = Field(default_factory=list)
     follow_ups: list[str] = Field(default_factory=list)
+    tool_calls: list[ToolCallRecord] = Field(default_factory=list)
+    sources: list[dict[str, Any]] = Field(default_factory=list)
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -51,5 +62,6 @@ class Session(BaseModel):
     platform: str = ""
     summary: IngestionSummary = Field(default_factory=IngestionSummary)
     messages: list[ChatMessage] = Field(default_factory=list)
+    report_findings: dict[str, list[str]] = Field(default_factory=dict)
     status: str = "pending"  # pending, ready, error
     created_at: datetime = Field(default_factory=datetime.utcnow)

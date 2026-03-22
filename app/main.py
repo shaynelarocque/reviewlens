@@ -6,6 +6,7 @@ import asyncio
 import html as html_module
 import json
 import os
+import re
 import uuid
 from collections import deque
 from datetime import datetime
@@ -14,13 +15,14 @@ from typing import Any
 
 import markdown
 from dotenv import load_dotenv
+from markupsafe import Markup
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sse_starlette.sse import EventSourceResponse
 
-from . import store, vectordb
+from . import knowledge, store, vectordb
 from .agent import handle_message
 from .ingest import build_summary, parse_csv, scrape_url
 from .models import ChatMessage, IngestionSummary, Session
@@ -29,8 +31,19 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 app = FastAPI(title="ReviewLens AI")
+
+# Load knowledge base on startup
+knowledge.load()
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def _render_message_filter(msg):
+    """Jinja2 filter — renders a ChatMessage as full HTML."""
+    return Markup(_render_message(msg))
+
+
+templates.env.filters["render_message"] = _render_message_filter
 
 # ── In-memory SSE event queues (per-session) ────────────────────────
 _event_queues: dict[str, deque[dict[str, str]]] = {}
@@ -292,6 +305,52 @@ async def delete_session(session_id: str):
     return JSONResponse({"ok": True})
 
 
+# ── Report generation ────────────────────────────────────────────────
+
+@app.get("/api/report/{session_id}")
+async def get_report(session_id: str):
+    """Return the accumulated report findings as structured JSON."""
+    session = store.load_session(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+
+    findings = store.get_findings(session_id)
+    return JSONResponse({
+        "product_name": session.product_name,
+        "platform": session.platform,
+        "findings": findings,
+        "total_findings": sum(len(v) for v in findings.values()),
+    })
+
+
+@app.post("/chat/{session_id}/report")
+async def generate_report(request: Request, session_id: str):
+    """Trigger report generation by sending a report request to the agent."""
+    session = store.load_session(session_id)
+    if not session:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+
+    # Treat this as a chat message asking for a report
+    message = "Generate a comprehensive analysis report from everything we've discussed. Use the saved report findings and the report-structure knowledge file to compile a well-structured document."
+
+    user_msg = ChatMessage(role="user", content="Generate report")
+    store.append_message(session_id, user_msg)
+
+    event = _get_response_event(session_id)
+    event.clear()
+
+    user_html = _render_message(user_msg)
+    asyncio.create_task(_run_agent_and_respond(session_id, message, session))
+
+    thinking_html = (
+        '<div id="thinking-indicator" class="message assistant-message thinking">'
+        '<div class="message-content">'
+        '<div class="thinking-dots"><span></span><span></span><span></span></div>'
+        '</div></div>'
+    )
+    return HTMLResponse(user_html + thinking_html)
+
+
 # ── Send chat message ───────────────────────────────────────────────
 
 @app.post("/chat/{session_id}/send")
@@ -377,6 +436,39 @@ async def chat_stream(session_id: str):
 
 # ── HTML rendering helpers ───────────────────────────────────────────
 
+def _render_citations(html: str, sources: list[dict[str, Any]]) -> str:
+    """Replace [source:review_id] markers with clickable citation popovers."""
+    if not sources:
+        return html
+    source_map = {s["id"]: s for s in sources}
+
+    def _replace(match):
+        review_id = match.group(1)
+        source = source_map.get(review_id)
+        if not source:
+            return match.group(0)
+        text = html_module.escape(source.get("text", "")[:300])
+        rating = source.get("rating", "")
+        date = source.get("date", "")
+        author = html_module.escape(source.get("author", "") or "Anonymous")
+        meta_parts = [author]
+        if rating:
+            meta_parts.append(f"{rating}/5")
+        if date:
+            meta_parts.append(str(date)[:10])
+        meta = " · ".join(meta_parts)
+        return (
+            f'<span class="citation" tabindex="0">'
+            f'<span class="citation-marker">[source]</span>'
+            f'<span class="citation-popover">'
+            f'<span class="citation-text">"{text}"</span>'
+            f'<span class="citation-meta">{meta}</span>'
+            f'</span></span>'
+        )
+
+    return re.sub(r'\[source:([^\]]+)\]', _replace, html)
+
+
 def _render_message(msg: ChatMessage) -> str:
     role_class = "user-message" if msg.role == "user" else "assistant-message"
     escaped = html_module.escape(msg.content)
@@ -386,21 +478,73 @@ def _render_message(msg: ChatMessage) -> str:
             msg.content,
             extensions=["tables", "fenced_code"],
         )
+        content_html = _render_citations(content_html, msg.sources)
     else:
         content_html = f"<p>{escaped}</p>"
 
     parts = [f'<div class="message {role_class}">']
     parts.append(f'<div class="message-content">{content_html}</div>')
 
+    # Tool activity accordion
+    if msg.role == "assistant" and msg.tool_calls:
+        n = len(msg.tool_calls)
+        parts.append('<details class="tool-accordion">')
+        parts.append(
+            f'<summary class="tool-accordion-header">'
+            f'<svg class="tool-accordion-chevron" width="12" height="12" viewBox="0 0 24 24" '
+            f'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">'
+            f'<polyline points="6 9 12 15 18 9"/></svg>'
+            f' {n} tool call{"s" if n != 1 else ""}</summary>'
+        )
+        parts.append('<div class="tool-accordion-body">')
+        for tc in msg.tool_calls:
+            tool_label = tc.tool_name.replace("_", " ").title()
+            parts.append('<div class="tool-call-item">')
+            parts.append(f'<span class="tool-call-name">{html_module.escape(tool_label)}</span>')
+            parts.append(f'<span class="tool-call-summary">{html_module.escape(tc.summary)}</span>')
+            if tc.inputs:
+                detail_parts = []
+                for k, v in tc.inputs.items():
+                    if k in ("query", "operation", "chart_type", "title", "section", "name", "question", "keyword") and v:
+                        detail_parts.append(f'{k}: {html_module.escape(str(v))}')
+                if detail_parts:
+                    parts.append(f'<span class="tool-call-detail">{" · ".join(detail_parts)}</span>')
+            parts.append('</div>')
+        parts.append('</div></details>')
+
+    # Charts with data table toggle
     for i, chart in enumerate(msg.charts):
         chart_id = f"chart-{uuid.uuid4().hex[:8]}"
-        parts.append(
-            f'<div class="chart-container">'
-            f'<canvas id="{chart_id}"></canvas>'
-            f'<script>renderChart("{chart_id}", {json.dumps(chart)});</script>'
-            f'</div>'
-        )
+        data_id = f"data-{chart_id}"
+        parts.append(f'<div class="chart-container">')
+        parts.append(f'<canvas id="{chart_id}"></canvas>')
+        parts.append(f'<script>renderChart("{chart_id}", {json.dumps(chart)});</script>')
 
+        # Data table toggle
+        labels = chart.get("data", {}).get("labels", [])
+        datasets = chart.get("data", {}).get("datasets", [])
+        if labels and datasets:
+            parts.append(
+                f'<button class="chart-data-toggle" '
+                f"onclick=\"toggleChartData('{data_id}')\">View data</button>"
+            )
+            parts.append(f'<div class="chart-data-table" id="{data_id}" style="display:none">')
+            parts.append('<table><thead><tr><th></th>')
+            for ds in datasets:
+                parts.append(f'<th>{html_module.escape(ds.get("label", ""))}</th>')
+            parts.append('</tr></thead><tbody>')
+            for j, label in enumerate(labels):
+                parts.append(f'<tr><td>{html_module.escape(str(label))}</td>')
+                for ds in datasets:
+                    data = ds.get("data", [])
+                    val = data[j] if j < len(data) else ""
+                    parts.append(f'<td>{val}</td>')
+                parts.append('</tr>')
+            parts.append('</tbody></table></div>')
+
+        parts.append('</div>')
+
+    # Follow-up buttons
     if msg.follow_ups:
         parts.append('<div class="follow-ups">')
         for q in msg.follow_ups:
