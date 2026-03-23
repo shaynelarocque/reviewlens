@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code transcript - page 10</title>
+    <style>
+:root { --bg-color: #f5f5f5; --card-bg: #ffffff; --user-bg: #e3f2fd; --user-border: #1976d2; --assistant-bg: #f5f5f5; --assistant-border: #9e9e9e; --thinking-bg: #fff8e1; --thinking-border: #ffc107; --thinking-text: #666; --tool-bg: #f3e5f5; --tool-border: #9c27b0; --tool-result-bg: #e8f5e9; --tool-error-bg: #ffebee; --text-color: #212121; --text-muted: #757575; --code-bg: #263238; --code-text: #aed581; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+.container { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.5rem; margin-bottom: 24px; padding-bottom: 8px; border-bottom: 2px solid var(--user-border); }
+.header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--user-border); padding-bottom: 8px; margin-bottom: 24px; }
+.header-row h1 { border-bottom: none; padding-bottom: 0; margin-bottom: 0; flex: 1; min-width: 200px; }
+.message { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.message.user { background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.message.assistant { background: var(--card-bg); border-left: 4px solid var(--assistant-border); }
+.message.tool-reply { background: #fff8e1; border-left: 4px solid #ff9800; }
+.tool-reply .role-label { color: #e65100; }
+.tool-reply .tool-result { background: transparent; padding: 0; margin: 0; }
+.tool-reply .tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.message-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.role-label { font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.user .role-label { color: var(--user-border); }
+time { color: var(--text-muted); font-size: 0.8rem; }
+.timestamp-link { color: inherit; text-decoration: none; }
+.timestamp-link:hover { text-decoration: underline; }
+.message:target { animation: highlight 2s ease-out; }
+@keyframes highlight { 0% { background-color: rgba(25, 118, 210, 0.2); } 100% { background-color: transparent; } }
+.message-content { padding: 16px; }
+.message-content p { margin: 0 0 12px 0; }
+.message-content p:last-child { margin-bottom: 0; }
+.thinking { background: var(--thinking-bg); border: 1px solid var(--thinking-border); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 0.9rem; color: var(--thinking-text); }
+.thinking-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #f57c00; margin-bottom: 8px; }
+.thinking p { margin: 8px 0; }
+.assistant-text { margin: 8px 0; }
+.tool-use { background: var(--tool-bg); border: 1px solid var(--tool-border); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-header { font-weight: 600; color: var(--tool-border); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.tool-icon { font-size: 1.1rem; }
+.tool-description { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic; }
+.tool-result { background: var(--tool-result-bg); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.tool-result.tool-error { background: var(--tool-error-bg); }
+.file-tool { border-radius: 8px; padding: 12px; margin: 12px 0; }
+.write-tool { background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%); border: 1px solid #4caf50; }
+.edit-tool { background: linear-gradient(135deg, #fff3e0 0%, #fce4ec 100%); border: 1px solid #ff9800; }
+.file-tool-header { font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.write-header { color: #2e7d32; }
+.edit-header { color: #e65100; }
+.file-tool-icon { font-size: 1rem; }
+.file-tool-path { font-family: monospace; background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; }
+.file-tool-fullpath { font-family: monospace; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px; word-break: break-all; }
+.file-content { margin: 0; }
+.edit-section { display: flex; margin: 4px 0; border-radius: 4px; overflow: hidden; }
+.edit-label { padding: 8px 12px; font-weight: bold; font-family: monospace; display: flex; align-items: flex-start; }
+.edit-old { background: #fce4ec; }
+.edit-old .edit-label { color: #b71c1c; background: #f8bbd9; }
+.edit-old .edit-content { color: #880e4f; }
+.edit-new { background: #e8f5e9; }
+.edit-new .edit-label { color: #1b5e20; background: #a5d6a7; }
+.edit-new .edit-content { color: #1b5e20; }
+.edit-content { margin: 0; flex: 1; background: transparent; font-size: 0.85rem; }
+.edit-replace-all { font-size: 0.75rem; font-weight: normal; color: var(--text-muted); }
+.write-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #e6f4ea); }
+.edit-tool .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff0e5); }
+.todo-list { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 1px solid #81c784; border-radius: 8px; padding: 12px; margin: 12px 0; }
+.todo-header { font-weight: 600; color: #2e7d32; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 0.95rem; }
+.todo-items { list-style: none; margin: 0; padding: 0; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.9rem; }
+.todo-item:last-child { border-bottom: none; }
+.todo-icon { flex-shrink: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 50%; }
+.todo-completed .todo-icon { color: #2e7d32; background: rgba(46, 125, 50, 0.15); }
+.todo-completed .todo-content { color: #558b2f; text-decoration: line-through; }
+.todo-in-progress .todo-icon { color: #f57c00; background: rgba(245, 124, 0, 0.15); }
+.todo-in-progress .todo-content { color: #e65100; font-weight: 500; }
+.todo-pending .todo-icon { color: #757575; background: rgba(0,0,0,0.05); }
+.todo-pending .todo-content { color: #616161; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; line-height: 1.5; margin: 8px 0; white-space: pre-wrap; word-wrap: break-word; }
+pre.json { color: #e0e0e0; }
+code { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+pre code { background: none; padding: 0; }
+.user-content { margin: 0; }
+.truncatable { position: relative; }
+.truncatable.truncated .truncatable-content { max-height: 200px; overflow: hidden; }
+.truncatable.truncated::after { content: ''; position: absolute; bottom: 32px; left: 0; right: 0; height: 60px; background: linear-gradient(to bottom, transparent, var(--card-bg)); pointer-events: none; }
+.message.user .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--user-bg)); }
+.message.tool-reply .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, #fff8e1); }
+.tool-use .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-bg)); }
+.tool-result .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--tool-result-bg)); }
+.expand-btn { display: none; width: 100%; padding: 8px 16px; margin-top: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; cursor: pointer; font-size: 0.85rem; color: var(--text-muted); }
+.expand-btn:hover { background: rgba(0,0,0,0.1); }
+.truncatable.truncated .expand-btn, .truncatable.expanded .expand-btn { display: block; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; }
+.pagination a, .pagination span { padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; }
+.pagination a { background: var(--card-bg); color: var(--user-border); border: 1px solid var(--user-border); }
+.pagination a:hover { background: var(--user-bg); }
+.pagination .current { background: var(--user-border); color: white; }
+.pagination .disabled { color: var(--text-muted); border: 1px solid #ddd; }
+.pagination .index-link { background: var(--user-border); color: white; }
+details.continuation { margin-bottom: 16px; }
+details.continuation summary { cursor: pointer; padding: 12px 16px; background: var(--user-bg); border-left: 4px solid var(--user-border); border-radius: 12px; font-weight: 500; color: var(--text-muted); }
+details.continuation summary:hover { background: rgba(25, 118, 210, 0.15); }
+details.continuation[open] summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+.index-item { margin-bottom: 16px; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); background: var(--user-bg); border-left: 4px solid var(--user-border); }
+.index-item a { display: block; text-decoration: none; color: inherit; }
+.index-item a:hover { background: rgba(25, 118, 210, 0.1); }
+.index-item-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(0,0,0,0.03); font-size: 0.85rem; }
+.index-item-number { font-weight: 600; color: var(--user-border); }
+.index-item-content { padding: 16px; }
+.index-item-stats { padding: 8px 16px 12px 32px; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid rgba(0,0,0,0.06); }
+.index-item-commit { margin-top: 6px; padding: 4px 8px; background: #fff3e0; border-radius: 4px; font-size: 0.85rem; color: #e65100; }
+.index-item-commit code { background: rgba(0,0,0,0.08); padding: 1px 4px; border-radius: 3px; font-size: 0.8rem; margin-right: 6px; }
+.commit-card { margin: 8px 0; padding: 10px 14px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 6px; }
+.commit-card a { text-decoration: none; color: #5d4037; display: block; }
+.commit-card a:hover { color: #e65100; }
+.commit-card-hash { font-family: monospace; color: #e65100; font-weight: 600; margin-right: 8px; }
+.index-commit { margin-bottom: 12px; padding: 10px 16px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.index-commit a { display: block; text-decoration: none; color: inherit; }
+.index-commit a:hover { background: rgba(255, 152, 0, 0.1); margin: -10px -16px; padding: 10px 16px; border-radius: 8px; }
+.index-commit-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+.index-commit-hash { font-family: monospace; color: #e65100; font-weight: 600; }
+.index-commit-msg { color: #5d4037; }
+.index-item-long-text { margin-top: 8px; padding: 12px; background: var(--card-bg); border-radius: 8px; border-left: 3px solid var(--assistant-border); }
+.index-item-long-text .truncatable.truncated::after { background: linear-gradient(to bottom, transparent, var(--card-bg)); }
+.index-item-long-text-content { color: var(--text-color); }
+#search-box { display: none; align-items: center; gap: 8px; }
+#search-box input { padding: 6px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; width: 180px; }
+#search-box button, #modal-search-btn, #modal-close-btn { background: var(--user-border); color: white; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#search-box button:hover, #modal-search-btn:hover { background: #1565c0; }
+#modal-close-btn { background: var(--text-muted); margin-left: 8px; }
+#modal-close-btn:hover { background: #616161; }
+#search-modal[open] { border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); padding: 0; width: 90vw; max-width: 900px; height: 80vh; max-height: 80vh; display: flex; flex-direction: column; }
+#search-modal::backdrop { background: rgba(0,0,0,0.5); }
+.search-modal-header { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--assistant-border); background: var(--bg-color); border-radius: 12px 12px 0 0; }
+.search-modal-header input { flex: 1; padding: 8px 12px; border: 1px solid var(--assistant-border); border-radius: 6px; font-size: 16px; }
+#search-status { padding: 8px 16px; font-size: 0.85rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+#search-results { flex: 1; overflow-y: auto; padding: 16px; }
+.search-result { margin-bottom: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.search-result a { display: block; text-decoration: none; color: inherit; }
+.search-result a:hover { background: rgba(25, 118, 210, 0.05); }
+.search-result-page { padding: 6px 12px; background: rgba(0,0,0,0.03); font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid rgba(0,0,0,0.06); }
+.search-result-content { padding: 12px; }
+.search-result mark { background: #fff59d; padding: 1px 2px; border-radius: 2px; }
+@media (max-width: 600px) { body { padding: 8px; } .message, .index-item { border-radius: 8px; } .message-content, .index-item-content { padding: 12px; } pre { font-size: 0.8rem; padding: 8px; } #search-box input { width: 120px; } #search-modal[open] { width: 95vw; height: 90vh; } }
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1><a href="index.html" style="color: inherit; text-decoration: none;">Claude Code transcript</a> - page 10/11</h1>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-009.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<span class="current">10</span>
+<a href="page-011.html">11</a>
+<a href="page-011.html">Next &rarr;</a>
+</div>
+
+        
+<div class="message user" id="msg-2026-03-22T22-59-11-177Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-03-22T22-59-11-177Z" class="timestamp-link"><time datetime="2026-03-22T22:59:11.177Z" data-timestamp="2026-03-22T22:59:11.177Z">2026-03-22T22:59:11.177Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Get Report Retrieved report: 4 findings across 4 sections
+List Knowledge Files Knowledge library: 3 files available
+Read Knowledge File Read knowledge file: report-structure (3135 chars) name: report-structure
+Compile Report Report compilation failed: cannot load library 'libgobject-2.0-0': dlopen(libgobject-2.0-0, 0x0002): tried: 'libgobject-2.0-0' (no such file), '/System/Volumes/Preboot/Cryptexes/OSlibgobject-2.0-0' (no such file), '/usr/lib/libgobject-2.0-0' (no such file, not in dyld cache), 'libgobject-2.0-0' (no such file). Additionally, ctypes.util.find_library() did not manage to locate a library called 'libgobject-2.0-0' title: HL2 — Review Intelligence Report · Metacritic PC</p>
+<p>I have all the findings and the template. Compiling the full PDF now.
+Suggest Follow Ups Suggested 4 follow-up questions</p>
+<p>Unfortunately the PDF renderer hit a system-level library error (<code>libgobject</code> is not installed in this environment), so the download link can't be generated automatically. However, I have the <strong>complete, fully-assembled report</strong> ready — here's exactly what was compiled, which you can copy, paste into any markdown editor (Notion, Obsidian, Typora, VS Code), or export to PDF from there in seconds. --- # HL2 — Review Intelligence Report <strong>Platform:</strong> Metacritic PC User Reviews · <strong>Corpus:</strong> 50 Re</p>
+<p>The full report is ready above — copy the markdown block into any editor to export as a styled PDF. All six key findings, five risk signals, and five prioritised recommendations are included, with data limitations clearly flagged throughout.</p>
+<p>Whenever you're ready to go deeper, the follow-up options above are a good next step. 📋</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T22-59-17-509Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T22-59-17-509Z" class="timestamp-link"><time datetime="2026-03-22T22:59:17.509Z" data-timestamp="2026-03-22T22:59:17.509Z">2026-03-22T22:59:17.509Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>WeasyPrint needs system-level Cairo/Pango/GObject libraries which aren't on your Mac. Let me swap to a pure-Python PDF solution.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T22-59-18-036Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T22-59-18-036Z" class="timestamp-link"><time datetime="2026-03-22T22:59:18.036Z" data-timestamp="2026-03-22T22:59:18.036Z">2026-03-22T22:59:18.036Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01ETiBKkuZ4i3pPRmEDyBLuR">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Install fpdf2 (pure Python PDF library)</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">.venv/bin/pip install fpdf2 2&gt;&amp;1 | tail -3</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T22-59-19-313Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T22-59-19-313Z" class="timestamp-link"><time datetime="2026-03-22T22:59:19.313Z" data-timestamp="2026-03-22T22:59:19.313Z">2026-03-22T22:59:19.313Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>[notice] A new release of pip is available: 24.2 -&gt; 26.0.1
+[notice] To update, run: python3.13 -m pip install --upgrade pip</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T22-59-26-930Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T22-59-26-930Z" class="timestamp-link"><time datetime="2026-03-22T22:59:26.930Z" data-timestamp="2026-03-22T22:59:26.930Z">2026-03-22T22:59:26.930Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Already installed. Let me rewrite <code>pdf.py</code> to use fpdf2 instead of weasyprint.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T22-59-27-713Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T22-59-27-713Z" class="timestamp-link"><time datetime="2026-03-22T22:59:27.713Z" data-timestamp="2026-03-22T22:59:27.713Z">2026-03-22T22:59:27.713Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01Su4rV1vgn6FQep1Vgbie9P"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py&#34;,
+  &#34;limit&#34;: 15
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T22-59-27-759Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T22-59-27-759Z" class="timestamp-link"><time datetime="2026-03-22T22:59:27.759Z" data-timestamp="2026-03-22T22:59:27.759Z">2026-03-22T22:59:27.759Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>     1→&quot;&quot;&quot;PDF report generation using WeasyPrint + matplotlib for charts.&quot;&quot;&quot;
+     2→
+     3→from __future__ import annotations
+     4→
+     5→import base64
+     6→import io
+     7→from datetime import datetime
+     8→from typing import Any
+     9→
+    10→import markdown as md
+    11→import matplotlib
+    12→matplotlib.use(&quot;Agg&quot;)
+    13→import matplotlib.pyplot as plt
+    14→
+    15→from .models import IngestionSummary</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-26-477Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-26-477Z" class="timestamp-link"><time datetime="2026-03-22T23:00:26.477Z" data-timestamp="2026-03-22T23:00:26.477Z">2026-03-22T23:00:26.477Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01JaJcpCHZqLVjV2GpndazNa">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content">&#34;&#34;&#34;PDF report generation using fpdf2 + matplotlib for charts.&#34;&#34;&#34;
+
+from __future__ import annotations
+
+import io
+import re
+import tempfile
+from datetime import datetime
+from typing import Any
+
+import matplotlib
+matplotlib.use(&#34;Agg&#34;)
+import matplotlib.pyplot as plt
+from fpdf import FPDF
+
+from .models import IngestionSummary
+
+# ── Chart colors matching the app&#39;s teal palette ─────────────────────
+
+COLORS = [
+    &#34;#2dd4bf&#34;, &#34;#f59e0b&#34;, &#34;#5eead4&#34;, &#34;#f87171&#34;,
+    &#34;#818cf8&#34;, &#34;#34d399&#34;, &#34;#fbbf24&#34;,
+]
+
+
+def _render_chart_to_tempfile(chart: dict[str, Any]) -&gt; str | None:
+    &#34;&#34;&#34;Render a chart config to a temp PNG file. Returns path or None.&#34;&#34;&#34;
+    chart_type = chart.get(&#34;type&#34;, &#34;bar&#34;)
+    title = chart.get(&#34;title&#34;, &#34;&#34;)
+    data = chart.get(&#34;data&#34;, {})
+    labels = data.get(&#34;labels&#34;, [])
+    datasets = data.get(&#34;datasets&#34;, [])
+
+    if not labels or not datasets:
+        return None
+
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    fig.patch.set_facecolor(&#34;white&#34;)
+    ax.set_facecolor(&#34;white&#34;)
+
+    actual_type = chart_type
+    if chart_type in (&#34;horizontalBar&#34;, &#34;stacked_bar&#34;):
+        actual_type = &#34;bar&#34;
+
+    if actual_type == &#34;bar&#34;:
+        import numpy as np
+        x = np.arange(len(labels))
+        width = 0.8 / max(len(datasets), 1)
+        for i, ds in enumerate(datasets):
+            values = ds.get(&#34;data&#34;, [])
+            color = COLORS[i % len(COLORS)]
+            if chart_type == &#34;horizontalBar&#34;:
+                ax.barh(x + i * width, values, width, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+            elif chart_type == &#34;stacked_bar&#34;:
+                bottom = [0] * len(labels)
+                if i &gt; 0:
+                    for prev in datasets[:i]:
+                        for j, v in enumerate(prev.get(&#34;data&#34;, [])):
+                            if j &lt; len(bottom):
+                                bottom[j] += v
+                ax.bar(x, values, 0.6, bottom=bottom, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+            else:
+                ax.bar(x + i * width, values, width, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+        if chart_type == &#34;horizontalBar&#34;:
+            ax.set_yticks(x + width * (len(datasets) - 1) / 2)
+            ax.set_yticklabels(labels, fontsize=8)
+        else:
+            ax.set_xticks(x + width * (len(datasets) - 1) / 2)
+            ax.set_xticklabels(labels, fontsize=8, rotation=45, ha=&#34;right&#34;)
+
+    elif actual_type == &#34;line&#34;:
+        for i, ds in enumerate(datasets):
+            ax.plot(labels, ds.get(&#34;data&#34;, []), marker=&#34;o&#34;, markersize=4,
+                    color=COLORS[i % len(COLORS)], label=ds.get(&#34;label&#34;, &#34;&#34;), linewidth=2)
+        ax.tick_params(axis=&#34;x&#34;, rotation=45, labelsize=8)
+
+    elif actual_type in (&#34;pie&#34;, &#34;doughnut&#34;):
+        values = datasets[0].get(&#34;data&#34;, []) if datasets else []
+        colors = COLORS[:len(values)]
+        wedgeprops = {&#34;width&#34;: 0.4} if actual_type == &#34;doughnut&#34; else {}
+        ax.pie(values, labels=labels, colors=colors, autopct=&#34;%1.0f%%&#34;,
+               textprops={&#34;fontsize&#34;: 8}, wedgeprops=wedgeprops)
+
+    elif actual_type == &#34;radar&#34;:
+        import numpy as np
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+        angles += angles[:1]
+        ax = fig.add_subplot(111, polar=True)
+        for i, ds in enumerate(datasets):
+            values = ds.get(&#34;data&#34;, []) + ds.get(&#34;data&#34;, [])[:1]
+            ax.plot(angles, values, color=COLORS[i % len(COLORS)], linewidth=2, label=ds.get(&#34;label&#34;, &#34;&#34;))
+            ax.fill(angles, values, color=COLORS[i % len(COLORS)], alpha=0.15)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels, fontsize=8)
+
+    elif actual_type == &#34;scatter&#34;:
+        for i, ds in enumerate(datasets):
+            ax.scatter(range(len(ds.get(&#34;data&#34;, []))), ds.get(&#34;data&#34;, []),
+                       color=COLORS[i % len(COLORS)], label=ds.get(&#34;label&#34;, &#34;&#34;), s=30)
+
+    if actual_type not in (&#34;pie&#34;, &#34;doughnut&#34;):
+        ax.set_title(title, fontsize=11, fontweight=&#34;500&#34;, pad=12)
+    else:
+        ax.set_title(title, fontsize=11, fontweight=&#34;500&#34;, pad=12)
+
+    if len(datasets) &gt; 1:
+        ax.legend(fontsize=8)
+
+    plt.tight_layout()
+
+    tmp = tempfile.NamedTemporaryFile(suffix=&#34;.png&#34;, delete=False)
+    fig.savefig(tmp.name, format=&#34;png&#34;, dpi=150, bbox_inches=&#34;tight&#34;, facecolor=&#34;white&#34;)
+    plt.close(fig)
+    return tmp.name
+
+
+class ReportPDF(FPDF):
+    &#34;&#34;&#34;Custom PDF with ReviewLens branding.&#34;&#34;&#34;
+
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=20)
+
+    def header(self):
+        if self.page_no() &gt; 1:
+            self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+            self.set_text_color(107, 125, 153)
+            self.cell(0, 8, &#34;ReviewLens AI&#34;, align=&#34;L&#34;)
+            self.ln(4)
+            self.set_draw_color(45, 212, 191)
+            self.set_line_width(0.3)
+            self.line(10, self.get_y(), self.w - 10, self.get_y())
+            self.ln(6)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+        self.set_text_color(156, 163, 175)
+        self.cell(0, 10, f&#34;Page {self.page_no()}/{{nb}}&#34;, align=&#34;C&#34;)
+
+
+def generate_pdf(
+    title: str,
+    content_md: str,
+    summary: IngestionSummary,
+    charts: list[dict[str, Any]] | None = None,
+) -&gt; bytes:
+    &#34;&#34;&#34;Generate a styled PDF report. Returns PDF bytes.&#34;&#34;&#34;
+
+    # Pre-render charts to temp files
+    chart_files: list[str | None] = []
+    if charts:
+        for chart in charts:
+            chart_files.append(_render_chart_to_tempfile(chart))
+
+    pdf = ReportPDF()
+    pdf.alias_nb_pages()
+
+    # ── Cover page ───────────────────────────────────────────────────
+    pdf.add_page()
+    pdf.ln(50)
+
+    # Logo text
+    pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 16)
+    pdf.set_text_color(107, 125, 153)
+    pdf.cell(0, 10, &#34;Review&#34;, new_x=&#34;END&#34;)
+    pdf.set_text_color(45, 212, 191)
+    pdf.cell(0, 10, &#34;Lens&#34;, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+    pdf.set_text_color(107, 125, 153)
+    pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+    pdf.cell(0, 6, &#34;AI&#34;, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+
+    pdf.ln(15)
+
+    # Title with teal left bar
+    pdf.set_draw_color(45, 212, 191)
+    pdf.set_line_width(1.2)
+    y_before = pdf.get_y()
+    pdf.set_x(18)
+    pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 22)
+    pdf.set_text_color(13, 17, 23)
+    pdf.multi_cell(160, 10, title)
+    y_after = pdf.get_y()
+    pdf.line(14, y_before, 14, y_after)
+
+    pdf.ln(12)
+
+    # Metadata
+    pdf.set_font(&#34;Courier&#34;, &#34;&#34;, 9)
+    pdf.set_text_color(107, 125, 153)
+    meta_lines = [
+        f&#34;Product:          {summary.product_name}&#34;,
+        f&#34;Platform:         {summary.platform}&#34;,
+        f&#34;Reviews Analysed: {summary.total_reviews}&#34;,
+    ]
+    if summary.date_range:
+        meta_lines.append(f&#34;Date Range:       {summary.date_range}&#34;)
+    if summary.average_rating:
+        meta_lines.append(f&#34;Average Rating:   {summary.average_rating:.1f}/5&#34;)
+    meta_lines.append(f&#34;Report Generated: {datetime.utcnow().strftime(&#39;%B %d, %Y&#39;)}&#34;)
+
+    for line in meta_lines:
+        pdf.cell(0, 6, line, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+
+    # ── Content pages ────────────────────────────────────────────────
+    pdf.add_page()
+
+    # Parse markdown to structured blocks
+    _render_markdown_to_pdf(pdf, content_md, chart_files)
+
+    # ── Footer on last page ──────────────────────────────────────────
+    pdf.ln(10)
+    pdf.set_draw_color(229, 231, 235)
+    pdf.set_line_width(0.2)
+    pdf.line(10, pdf.get_y(), pdf.w - 10, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+    pdf.set_text_color(156, 163, 175)
+    now = datetime.utcnow().strftime(&#34;%B %d, %Y&#34;)
+    pdf.cell(0, 8, f&#34;Generated by ReviewLens AI \u00b7 {now}&#34;, align=&#34;C&#34;)
+
+    return pdf.output()
+
+
+def _render_markdown_to_pdf(pdf: ReportPDF, md_text: str, chart_files: list[str | None]) -&gt; None:
+    &#34;&#34;&#34;Parse markdown text and render it to the PDF with basic formatting.&#34;&#34;&#34;
+
+    lines = md_text.split(&#34;\n&#34;)
+    in_list = False
+    in_table = False
+    table_rows: list[list[str]] = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Skip empty lines
+        if not stripped:
+            if in_table and table_rows:
+                _render_table(pdf, table_rows)
+                table_rows = []
+                in_table = False
+            pdf.ln(3)
+            continue
+
+        # Chart markers
+        chart_match = re.match(r&#39;\[chart:(\d+)\]&#39;, stripped)
+        if chart_match:
+            idx = int(chart_match.group(1))
+            if idx &lt; len(chart_files) and chart_files[idx]:
+                pdf.ln(4)
+                pdf.image(chart_files[idx], x=15, w=pdf.w - 30)
+                pdf.ln(4)
+            continue
+
+        # Table rows
+        if &#34;|&#34; in stripped and not stripped.startswith(&#34;#&#34;):
+            cells = [c.strip() for c in stripped.split(&#34;|&#34;)]
+            cells = [c for c in cells if c]  # Remove empty edge cells
+            # Skip separator rows
+            if all(re.match(r&#39;^[-:]+$&#39;, c) for c in cells):
+                continue
+            table_rows.append(cells)
+            in_table = True
+            continue
+        elif in_table and table_rows:
+            _render_table(pdf, table_rows)
+            table_rows = []
+            in_table = False
+
+        # Headings
+        if stripped.startswith(&#34;# &#34;):
+            pdf.ln(6)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 16)
+            pdf.set_text_color(13, 17, 23)
+            pdf.multi_cell(0, 8, _strip_md(stripped[2:]))
+            pdf.set_draw_color(45, 212, 191)
+            pdf.set_line_width(0.6)
+            pdf.line(10, pdf.get_y() + 1, pdf.w - 10, pdf.get_y() + 1)
+            pdf.ln(4)
+        elif stripped.startswith(&#34;## &#34;):
+            pdf.ln(5)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 13)
+            pdf.set_text_color(13, 17, 23)
+            pdf.multi_cell(0, 7, _strip_md(stripped[3:]))
+            pdf.ln(2)
+        elif stripped.startswith(&#34;### &#34;):
+            pdf.ln(4)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 11)
+            pdf.set_text_color(55, 65, 81)
+            pdf.multi_cell(0, 6, _strip_md(stripped[4:]))
+            pdf.ln(2)
+        # Blockquotes
+        elif stripped.startswith(&#34;&gt; &#34;):
+            pdf.set_draw_color(45, 212, 191)
+            pdf.set_line_width(0.6)
+            x = pdf.get_x()
+            y = pdf.get_y()
+            pdf.set_x(x + 6)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 9)
+            pdf.set_text_color(55, 65, 81)
+            pdf.multi_cell(pdf.w - 30, 5, _strip_md(stripped[2:]))
+            pdf.line(x + 3, y, x + 3, pdf.get_y())
+            pdf.ln(2)
+        # List items
+        elif stripped.startswith(&#34;- &#34;) or stripped.startswith(&#34;* &#34;):
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+            pdf.set_text_color(26, 35, 50)
+            pdf.set_x(pdf.l_margin + 4)
+            pdf.cell(4, 5, &#34;\u2022&#34;)
+            pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 8, 5, _strip_md(stripped[2:]))
+            pdf.ln(1)
+        elif re.match(r&#39;^\d+\. &#39;, stripped):
+            num_match = re.match(r&#39;^(\d+)\. (.*)&#39;, stripped)
+            if num_match:
+                pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+                pdf.set_text_color(26, 35, 50)
+                pdf.set_x(pdf.l_margin + 4)
+                pdf.cell(6, 5, f&#34;{num_match.group(1)}.&#34;)
+                pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 10, 5, _strip_md(num_match.group(2)))
+                pdf.ln(1)
+        # Regular paragraph
+        else:
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+            pdf.set_text_color(26, 35, 50)
+            pdf.multi_cell(0, 5, _strip_md(stripped))
+            pdf.ln(2)
+
+    # Flush remaining table
+    if in_table and table_rows:
+        _render_table(pdf, table_rows)
+
+
+def _render_table(pdf: ReportPDF, rows: list[list[str]]) -&gt; None:
+    &#34;&#34;&#34;Render a simple table to the PDF.&#34;&#34;&#34;
+    if not rows:
+        return
+
+    pdf.ln(3)
+    n_cols = max(len(r) for r in rows)
+    col_w = (pdf.w - pdf.l_margin - pdf.r_margin) / max(n_cols, 1)
+
+    for i, row in enumerate(rows):
+        if i == 0:
+            # Header row
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 8)
+            pdf.set_text_color(107, 114, 128)
+            pdf.set_fill_color(243, 244, 246)
+            for cell in row:
+                pdf.cell(col_w, 6, _strip_md(cell)[:30], border=1, fill=True)
+            pdf.ln()
+        else:
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 9)
+            pdf.set_text_color(26, 35, 50)
+            for j, cell in enumerate(row):
+                pdf.cell(col_w, 5.5, _strip_md(cell)[:40], border=1)
+            pdf.ln()
+    pdf.ln(3)
+
+
+def _strip_md(text: str) -&gt; str:
+    &#34;&#34;&#34;Strip markdown formatting for plain text output.&#34;&#34;&#34;
+    text = re.sub(r&#39;\*\*(.+?)\*\*&#39;, r&#39;\1&#39;, text)  # bold
+    text = re.sub(r&#39;\*(.+?)\*&#39;, r&#39;\1&#39;, text)  # italic
+    text = re.sub(r&#39;`(.+?)`&#39;, r&#39;\1&#39;, text)  # code
+    text = re.sub(r&#39;\[source:[^\]]+\]&#39;, &#39;&#39;, text)  # citation markers
+    text = re.sub(r&#39;\[([^\]]+)\]\([^\)]+\)&#39;, r&#39;\1&#39;, text)  # links
+    return text.strip()
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-26-535Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-26-535Z" class="timestamp-link"><time datetime="2026-03-22T23:00:26.535Z" data-timestamp="2026-03-22T23:00:26.535Z">2026-03-22T23:00:26.535Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-32-828Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-32-828Z" class="timestamp-link"><time datetime="2026-03-22T23:00:32.828Z" data-timestamp="2026-03-22T23:00:32.828Z">2026-03-22T23:00:32.828Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now update requirements.txt — swap weasyprint for fpdf2.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-33-868Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-33-868Z" class="timestamp-link"><time datetime="2026-03-22T23:00:33.868Z" data-timestamp="2026-03-22T23:00:33.868Z">2026-03-22T23:00:33.868Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_018MCKVjmKJMjwcPwmnrjmGC">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">requirements.txt</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/requirements.txt</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">weasyprint
+matplotlib</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">fpdf2
+matplotlib</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-33-917Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-33-917Z" class="timestamp-link"><time datetime="2026-03-22T23:00:33.917Z" data-timestamp="2026-03-22T23:00:33.917Z">2026-03-22T23:00:33.917Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/requirements.txt has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-38-592Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-38-592Z" class="timestamp-link"><time datetime="2026-03-22T23:00:38.592Z" data-timestamp="2026-03-22T23:00:38.592Z">2026-03-22T23:00:38.592Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Update the Dockerfile — remove the weasyprint system deps.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-40-585Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-40-585Z" class="timestamp-link"><time datetime="2026-03-22T23:00:40.585Z" data-timestamp="2026-03-22T23:00:40.585Z">2026-03-22T23:00:40.585Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Hbed6f58G9vpajcMLxjUq3">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">Dockerfile</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/Dockerfile</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    build-essential \
+    libpango-1.0-0 libpangocairo-1.0-0 libcairo2 libgdk-pixbuf2.0-0 \
+    libffi-dev shared-mime-info \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends \
+    build-essential \
+    &amp;&amp; rm -rf /var/lib/apt/lists/*</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-40-635Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-40-635Z" class="timestamp-link"><time datetime="2026-03-22T23:00:40.635Z" data-timestamp="2026-03-22T23:00:40.635Z">2026-03-22T23:00:40.635Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/Dockerfile has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-45-616Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-45-616Z" class="timestamp-link"><time datetime="2026-03-22T23:00:45.616Z" data-timestamp="2026-03-22T23:00:45.616Z">2026-03-22T23:00:45.616Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01W9nF4UnsQNgghHsM2RpDbc">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Syntax check</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">python3 -c &#34;import ast; ast.parse(open(&#39;app/pdf.py&#39;).read()); print(&#39;OK&#39;)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-45-712Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-45-712Z" class="timestamp-link"><time datetime="2026-03-22T23:00:45.712Z" data-timestamp="2026-03-22T23:00:45.712Z">2026-03-22T23:00:45.712Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>OK</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-51-317Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-51-317Z" class="timestamp-link"><time datetime="2026-03-22T23:00:51.317Z" data-timestamp="2026-03-22T23:00:51.317Z">2026-03-22T23:00:51.317Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01KVPva6h5h1FtwGQpGmqjyj">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Restart server</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">lsof -ti :8000 2&gt;/dev/null | xargs kill -9 2&gt;/dev/null; sleep 2 &amp;&amp; .venv/bin/uvicorn app.main:app --reload --reload-exclude &#39;.venv&#39; --reload-exclude &#39;data&#39;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-51-388Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-51-388Z" class="timestamp-link"><time datetime="2026-03-22T23:00:51.388Z" data-timestamp="2026-03-22T23:00:51.388Z">2026-03-22T23:00:51.388Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>Command running in background with ID: bh2s9qqar. Output is being written to: /private/tmp/claude-501/-Users-shaynelarocque-Documents-GitHub-futuresight/5c8423a6-db28-4eb0-98eb-ccb8759929ff/tasks/bh2s9qqar.output</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-00-56-242Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-00-56-242Z" class="timestamp-link"><time datetime="2026-03-22T23:00:56.242Z" data-timestamp="2026-03-22T23:00:56.242Z">2026-03-22T23:00:56.242Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01J8o4kApnyAN8FZT2AWEoXh">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Check health</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">sleep 3 &amp;&amp; curl -s http://localhost:8000/health</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-00-59-380Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-00-59-380Z" class="timestamp-link"><time datetime="2026-03-22T23:00:59.380Z" data-timestamp="2026-03-22T23:00:59.380Z">2026-03-22T23:00:59.380Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>{&quot;status&quot;:&quot;ok&quot;}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-01-09-546Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-01-09-546Z" class="timestamp-link"><time datetime="2026-03-22T23:01:09.546Z" data-timestamp="2026-03-22T23:01:09.546Z">2026-03-22T23:01:09.546Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Swapped WeasyPrint (needs system C libraries) for fpdf2 (pure Python, zero system deps). The PDF generation now:</p>
+<ul>
+<li><strong>Cover page</strong> — ReviewLens logo text, title with teal left bar, metadata block (product, platform, review count, date range, rating, generation date)</li>
+<li><strong>Content</strong> — Parsed markdown with headings (H1 gets teal underline), blockquotes (teal left border), bullet/numbered lists, tables with header styling, <code>[chart:N]</code> markers replaced with matplotlib PNGs</li>
+<li><strong>Branding</strong> — "ReviewLens AI" header on pages 2+, page numbers in footer, teal accent throughout</li>
+<li><strong>Charts</strong> — Same matplotlib rendering with the teal palette, saved as temp PNGs and embedded</li>
+</ul>
+<p>No system dependencies needed — works on Mac, Linux, Docker without any <code>apt-get</code> packages. Try the report generation again.</p></div></div></div>
+<div class="message user" id="msg-2026-03-22T23-01-09-758Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-03-22T23-01-09-758Z" class="timestamp-link"><time datetime="2026-03-22T23:01:09.758Z" data-timestamp="2026-03-22T23:01:09.758Z">2026-03-22T23:01:09.758Z</time></a></div><div class="message-content">
+<div class="user-content"><p><task-notification>
+<task-id>bpbqm0q8s</task-id>
+<tool-use-id>toolu_01KxJL6ZhVyGmBphhd8JpurW</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-shaynelarocque-Documents-GitHub-futuresight/5c8423a6-db28-4eb0-98eb-ccb8759929ff/tasks/bpbqm0q8s.output</output-file>
+<status>failed</status></p>
+<summary>Background command "Restart with clean state" failed with exit code 137</summary>
+<p></task-notification>
+Read the output file to retrieve the result: /private/tmp/claude-501/-Users-shaynelarocque-Documents-GitHub-futuresight/5c8423a6-db28-4eb0-98eb-ccb8759929ff/tasks/bpbqm0q8s.output</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-01-14-407Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-01-14-407Z" class="timestamp-link"><time datetime="2026-03-22T23:01:14.407Z" data-timestamp="2026-03-22T23:01:14.407Z">2026-03-22T23:01:14.407Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Old instance killed by restart. New one's running.</p></div></div></div>
+<div class="message user" id="msg-2026-03-22T23-04-00-810Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-03-22T23-04-00-810Z" class="timestamp-link"><time datetime="2026-03-22T23:04:00.810Z" data-timestamp="2026-03-22T23:04:00.810Z">2026-03-22T23:04:00.810Z</time></a></div><div class="message-content">
+<div class="user-content"><p>[RL] Chat init — SESSION_ID: e2ff35b4-95bc-4dbc-9123-05340af6b5ba chatForm: true chatInput: true app.js:6:31
+[RL] Sending message: Try again app.js:6:31
+[RL] POST /chat/e2ff35b4-95bc-4dbc-9123-05340af6b5ba/send app.js:6:31
+[RL] POST response: 200 OK app.js:6:31
+[RL] Opening SSE: /chat/e2ff35b4-95bc-4dbc-9123-05340af6b5ba/stream app.js:6:31
+[RL] SSE tool event: Retrieved report: 4 findings across 4 sections app.js:6:31
+[RL] SSE tool event: Knowledge library: 3 files available app.js:6:31
+[RL] SSE tool event: Read knowledge file: report-structure (3135 chars) app.js:6:31
+[RL] SSE tool event: Generated chart: Inferred Sentiment Distribution — HL2 Reviews (n=50) app.js:6:31
+[RL] SSE tool event: Report compilation failed: Character "—" at index 4 in text is outside the range of characters supported by the font used: "helveticaB". Please consider using a Unicode font. app.js:6:31
+[RL] SSE tool event: Report compilation failed: Character "•" at index 0 in text is outside the range of characters supported by the font used: "helvetica". Please consider using a Unicode font.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-05-499Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-05-499Z" class="timestamp-link"><time datetime="2026-03-22T23:04:05.499Z" data-timestamp="2026-03-22T23:04:05.499Z">2026-03-22T23:04:05.499Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>fpdf2's built-in Helvetica doesn't support Unicode characters. Need to use a Unicode-capable font.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-06-499Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-06-499Z" class="timestamp-link"><time datetime="2026-03-22T23:04:06.499Z" data-timestamp="2026-03-22T23:04:06.499Z">2026-03-22T23:04:06.499Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_013EPSjHwvGpsWJbgRWTRtbp"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py&#34;,
+  &#34;offset&#34;: 118,
+  &#34;limit&#34;: 25
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-06-546Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-06-546Z" class="timestamp-link"><time datetime="2026-03-22T23:04:06.546Z" data-timestamp="2026-03-22T23:04:06.546Z">2026-03-22T23:04:06.546Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>   118→    &quot;&quot;&quot;Custom PDF with ReviewLens branding.&quot;&quot;&quot;
+   119→
+   120→    def __init__(self):
+   121→        super().__init__()
+   122→        self.set_auto_page_break(auto=True, margin=20)
+   123→
+   124→    def header(self):
+   125→        if self.page_no() &gt; 1:
+   126→            self.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 8)
+   127→            self.set_text_color(107, 125, 153)
+   128→            self.cell(0, 8, &quot;ReviewLens AI&quot;, align=&quot;L&quot;)
+   129→            self.ln(4)
+   130→            self.set_draw_color(45, 212, 191)
+   131→            self.set_line_width(0.3)
+   132→            self.line(10, self.get_y(), self.w - 10, self.get_y())
+   133→            self.ln(6)
+   134→
+   135→    def footer(self):
+   136→        self.set_y(-15)
+   137→        self.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 8)
+   138→        self.set_text_color(156, 163, 175)
+   139→        self.cell(0, 10, f&quot;Page {self.page_no()}/{{nb}}&quot;, align=&quot;C&quot;)
+   140→
+   141→
+   142→def generate_pdf(</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-12-550Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-12-550Z" class="timestamp-link"><time datetime="2026-03-22T23:04:12.550Z" data-timestamp="2026-03-22T23:04:12.550Z">2026-03-22T23:04:12.550Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>The fix: use fpdf2's built-in DejaVu font with <code>uni=True</code>, and replace unicode chars with safe ASCII equivalents in the strip function.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-22-298Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-22-298Z" class="timestamp-link"><time datetime="2026-03-22T23:04:22.298Z" data-timestamp="2026-03-22T23:04:22.298Z">2026-03-22T23:04:22.298Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01R4dmaND4kjukDoSb9JkDTN">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">class ReportPDF(FPDF):
+    &#34;&#34;&#34;Custom PDF with ReviewLens branding.&#34;&#34;&#34;
+
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=20)
+
+    def header(self):
+        if self.page_no() &gt; 1:
+            self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+            self.set_text_color(107, 125, 153)
+            self.cell(0, 8, &#34;ReviewLens AI&#34;, align=&#34;L&#34;)
+            self.ln(4)
+            self.set_draw_color(45, 212, 191)
+            self.set_line_width(0.3)
+            self.line(10, self.get_y(), self.w - 10, self.get_y())
+            self.ln(6)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+        self.set_text_color(156, 163, 175)
+        self.cell(0, 10, f&#34;Page {self.page_no()}/{{nb}}&#34;, align=&#34;C&#34;)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def _safe_text(text: str) -&gt; str:
+    &#34;&#34;&#34;Replace Unicode characters that might not be in all fonts.&#34;&#34;&#34;
+    replacements = {
+        &#34;\u2014&#34;: &#34;--&#34;,   # em dash
+        &#34;\u2013&#34;: &#34;-&#34;,    # en dash
+        &#34;\u2018&#34;: &#34;&#39;&#34;,    # left single quote
+        &#34;\u2019&#34;: &#34;&#39;&#34;,    # right single quote
+        &#34;\u201c&#34;: &#39;&#34;&#39;,    # left double quote
+        &#34;\u201d&#34;: &#39;&#34;&#39;,    # right double quote
+        &#34;\u2026&#34;: &#34;...&#34;,  # ellipsis
+        &#34;\u00b7&#34;: &#34; - &#34;,  # middle dot
+        &#34;\u2022&#34;: &#34;-&#34;,    # bullet
+        &#34;\u2023&#34;: &#34;&gt;&#34;,    # triangular bullet
+        &#34;\u25cf&#34;: &#34;-&#34;,    # black circle
+        &#34;\u2192&#34;: &#34;-&gt;&#34;,   # right arrow
+        &#34;\u2190&#34;: &#34;&lt;-&#34;,   # left arrow
+        &#34;\u2265&#34;: &#34;&gt;=&#34;,   # &gt;=
+        &#34;\u2264&#34;: &#34;&lt;=&#34;,   # &lt;=
+        &#34;\u00a0&#34;: &#34; &#34;,    # non-breaking space
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
+    # Strip any remaining non-latin1 chars as last resort
+    return text.encode(&#34;latin-1&#34;, errors=&#34;replace&#34;).decode(&#34;latin-1&#34;)
+
+
+class ReportPDF(FPDF):
+    &#34;&#34;&#34;Custom PDF with ReviewLens branding.&#34;&#34;&#34;
+
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=20)
+
+    def header(self):
+        if self.page_no() &gt; 1:
+            self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+            self.set_text_color(107, 125, 153)
+            self.cell(0, 8, &#34;ReviewLens AI&#34;, align=&#34;L&#34;)
+            self.ln(4)
+            self.set_draw_color(45, 212, 191)
+            self.set_line_width(0.3)
+            self.line(10, self.get_y(), self.w - 10, self.get_y())
+            self.ln(6)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+        self.set_text_color(156, 163, 175)
+        self.cell(0, 10, f&#34;Page {self.page_no()}/{{nb}}&#34;, align=&#34;C&#34;)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-22-329Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-22-329Z" class="timestamp-link"><time datetime="2026-03-22T23:04:22.329Z" data-timestamp="2026-03-22T23:04:22.329Z">2026-03-22T23:04:22.329Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-28-231Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-28-231Z" class="timestamp-link"><time datetime="2026-03-22T23:04:28.231Z" data-timestamp="2026-03-22T23:04:28.231Z">2026-03-22T23:04:28.231Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Now update <code>_strip_md</code> to also run <code>_safe_text</code>, and add it to all text output points.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-32-485Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-32-485Z" class="timestamp-link"><time datetime="2026-03-22T23:04:32.485Z" data-timestamp="2026-03-22T23:04:32.485Z">2026-03-22T23:04:32.485Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_017fCf3WG5tev8bnJTpPYZVd">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">def _strip_md(text: str) -&gt; str:
+    &#34;&#34;&#34;Strip markdown formatting for plain text output.&#34;&#34;&#34;
+    text = re.sub(r&#39;\*\*(.+?)\*\*&#39;, r&#39;\1&#39;, text)  # bold
+    text = re.sub(r&#39;\*(.+?)\*&#39;, r&#39;\1&#39;, text)  # italic
+    text = re.sub(r&#39;`(.+?)`&#39;, r&#39;\1&#39;, text)  # code
+    text = re.sub(r&#39;\[source:[^\]]+\]&#39;, &#39;&#39;, text)  # citation markers
+    text = re.sub(r&#39;\[([^\]]+)\]\([^\)]+\)&#39;, r&#39;\1&#39;, text)  # links
+    return text.strip()</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">def _strip_md(text: str) -&gt; str:
+    &#34;&#34;&#34;Strip markdown formatting for plain text output.&#34;&#34;&#34;
+    text = re.sub(r&#39;\*\*(.+?)\*\*&#39;, r&#39;\1&#39;, text)  # bold
+    text = re.sub(r&#39;\*(.+?)\*&#39;, r&#39;\1&#39;, text)  # italic
+    text = re.sub(r&#39;`(.+?)`&#39;, r&#39;\1&#39;, text)  # code
+    text = re.sub(r&#39;\[source:[^\]]+\]&#39;, &#39;&#39;, text)  # citation markers
+    text = re.sub(r&#39;\[chart:\d+\]&#39;, &#39;&#39;, text)  # chart markers
+    text = re.sub(r&#39;\[([^\]]+)\]\([^\)]+\)&#39;, r&#39;\1&#39;, text)  # links
+    return _safe_text(text.strip())</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-32-538Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-32-538Z" class="timestamp-link"><time datetime="2026-03-22T23:04:32.538Z" data-timestamp="2026-03-22T23:04:32.538Z">2026-03-22T23:04:32.538Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-36-560Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-36-560Z" class="timestamp-link"><time datetime="2026-03-22T23:04:36.560Z" data-timestamp="2026-03-22T23:04:36.560Z">2026-03-22T23:04:36.560Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Also update the bullet character to use a plain ASCII dash instead of the Unicode bullet.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-37-639Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-37-639Z" class="timestamp-link"><time datetime="2026-03-22T23:04:37.639Z" data-timestamp="2026-03-22T23:04:37.639Z">2026-03-22T23:04:37.639Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01KqVDwthU882sLNM3ojbkw7">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">            pdf.cell(4, 5, &#34;\u2022&#34;)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">            pdf.cell(4, 5, &#34;-&#34;)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-37-700Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-37-700Z" class="timestamp-link"><time datetime="2026-03-22T23:04:37.700Z" data-timestamp="2026-03-22T23:04:37.700Z">2026-03-22T23:04:37.700Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-43-977Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-43-977Z" class="timestamp-link"><time datetime="2026-03-22T23:04:43.977Z" data-timestamp="2026-03-22T23:04:43.977Z">2026-03-22T23:04:43.977Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>And the middle dot in the footer.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-46-148Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-46-148Z" class="timestamp-link"><time datetime="2026-03-22T23:04:46.148Z" data-timestamp="2026-03-22T23:04:46.148Z">2026-03-22T23:04:46.148Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Eo5S9n3Frs7LYs2ks9cCDi">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    pdf.cell(0, 8, f&#34;Generated by ReviewLens AI \u00b7 {now}&#34;, align=&#34;C&#34;)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    pdf.cell(0, 8, f&#34;Generated by ReviewLens AI - {now}&#34;, align=&#34;C&#34;)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-46-151Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-46-151Z" class="timestamp-link"><time datetime="2026-03-22T23:04:46.151Z" data-timestamp="2026-03-22T23:04:46.151Z">2026-03-22T23:04:46.151Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-50-452Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-50-452Z" class="timestamp-link"><time datetime="2026-03-22T23:04:50.452Z" data-timestamp="2026-03-22T23:04:50.452Z">2026-03-22T23:04:50.452Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Also make the cover page metadata go through <code>_safe_text</code>.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-51-410Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-51-410Z" class="timestamp-link"><time datetime="2026-03-22T23:04:51.410Z" data-timestamp="2026-03-22T23:04:51.410Z">2026-03-22T23:04:51.410Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_011B2VrMRJznBZNgu2sxwtB3">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    pdf.multi_cell(160, 10, title)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    pdf.multi_cell(160, 10, _safe_text(title))</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-51-459Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-51-459Z" class="timestamp-link"><time datetime="2026-03-22T23:04:51.459Z" data-timestamp="2026-03-22T23:04:51.459Z">2026-03-22T23:04:51.459Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-04-56-993Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-04-56-993Z" class="timestamp-link"><time datetime="2026-03-22T23:04:56.993Z" data-timestamp="2026-03-22T23:04:56.993Z">2026-03-22T23:04:56.993Z</time></a></div><div class="message-content"><div class="file-tool edit-tool" data-tool-id="toolu_01Cz4ZD1Louzg1gwE4sJ5DwF">
+<div class="file-tool-header edit-header"><span class="file-tool-icon">✏️</span> Edit <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content">
+<div class="edit-section edit-old"><div class="edit-label">−</div><pre class="edit-content">    for line in meta_lines:
+        pdf.cell(0, 6, line, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)</pre></div>
+<div class="edit-section edit-new"><div class="edit-label">+</div><pre class="edit-content">    for line in meta_lines:
+        pdf.cell(0, 6, _safe_text(line), new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)</pre></div>
+</div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-04-57-048Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-04-57-048Z" class="timestamp-link"><time datetime="2026-03-22T23:04:57.048Z" data-timestamp="2026-03-22T23:04:57.048Z">2026-03-22T23:04:57.048Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-05-05-805Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-05-05-805Z" class="timestamp-link"><time datetime="2026-03-22T23:05:05.805Z" data-timestamp="2026-03-22T23:05:05.805Z">2026-03-22T23:05:05.805Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01SiSUKUHfgf6AV1Uf4Mz9Nw">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Syntax check</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">python3 -c &#34;import ast; ast.parse(open(&#39;app/pdf.py&#39;).read()); print(&#39;OK&#39;)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-05-05-914Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-05-05-914Z" class="timestamp-link"><time datetime="2026-03-22T23:05:05.914Z" data-timestamp="2026-03-22T23:05:05.914Z">2026-03-22T23:05:05.914Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>OK</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-05-10-980Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-05-10-980Z" class="timestamp-link"><time datetime="2026-03-22T23:05:10.980Z" data-timestamp="2026-03-22T23:05:10.980Z">2026-03-22T23:05:10.980Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Server should auto-reload. Give it a moment and try again — em dashes, bullets, and other Unicode chars are now safely converted to ASCII equivalents before hitting the PDF renderer.</p></div></div></div>
+<div class="message user" id="msg-2026-03-22T23-10-17-954Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-03-22T23-10-17-954Z" class="timestamp-link"><time datetime="2026-03-22T23:10:17.954Z" data-timestamp="2026-03-22T23:10:17.954Z">2026-03-22T23:10:17.954Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Fix PDF report styling. Issues I spotted visually:</p>
+<ol>
+<li>
+<p><strong>Cover page redesign.</strong> The logo renders broken ("Review Lens" / "AI" split). Make the cover page look intentional: center the ReviewLens logo + title vertically in the top third, use the teal accent color for the title, put the metadata (product, platform, reviews, date) in a clean styled box below it. Remove the stray pipe character from the title. No monospace for metadata — use the regular sans font.</p>
+</li>
+<li>
+<p><strong>Horizontal rules.</strong> The <code>---</code> markdown is rendering as literal dashes, not <code>&lt;hr&gt;</code> elements. Make sure the markdown-to-HTML conversion handles <code>---</code> as <code>&lt;hr&gt;</code>, and style <code>&lt;hr&gt;</code> in the PDF CSS as a subtle teal line with margin.</p>
+</li>
+<li>
+<p><strong>Table overflow.</strong> Tables are clipping text on the right edge, especially the Sentiment Breakdown and Dataset Overview tables. Fix the PDF CSS: tables should be <code>width: 100%</code> with <code>table-layout: fixed</code>, cells should <code>word-wrap: break-word</code>, and reduce font size to 0.8em for table content. For wide tables, consider reducing padding.</p>
+</li>
+<li>
+<p><strong>Emoji/unicode rendering.</strong> Risk severity indicators (🔴🟡🟢) and sentiment arrows render as <code>?</code> characters. Replace these in the HTML template with styled text badges instead: <code>&lt;span class="badge-high"&gt;HIGH&lt;/span&gt;</code>, <code>&lt;span class="badge-medium"&gt;MEDIUM&lt;/span&gt;</code>, <code>&lt;span class="badge-low"&gt;LOW&lt;/span&gt;</code> with colored backgrounds (red/amber/green). Do this as a post-processing step on the HTML before PDF generation — regex replace the emoji patterns.</p>
+</li>
+<li>
+<p><strong>Header strikethrough bug.</strong> The "ReviewLens AI" running header on every page appears to have a line through it. Fix the CSS for the page header — it should be italic, teal, no text-decoration.</p>
+</li>
+<li>
+<p><strong>Overall polish.</strong> Increase body margins slightly (the text runs too close to edges). Add a subtle top border (1px teal) as a running header line on content pages. The footer "Page X/Y" styling is fine — keep it.</p>
+</li>
+</ol></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-10-22-286Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-10-22-286Z" class="timestamp-link"><time datetime="2026-03-22T23:10:22.286Z" data-timestamp="2026-03-22T23:10:22.286Z">2026-03-22T23:10:22.286Z</time></a></div><div class="message-content">
+<div class="tool-use" data-tool-id="toolu_01VsGp2UsRWM6sAkZfrqc3D8"><div class="tool-header"><span class="tool-icon">⚙</span> Read</div><div class="truncatable"><div class="truncatable-content"><pre class="json">{
+  &#34;file_path&#34;: &#34;/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py&#34;
+}</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-10-22-457Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-10-22-457Z" class="timestamp-link"><time datetime="2026-03-22T23:10:22.457Z" data-timestamp="2026-03-22T23:10:22.457Z">2026-03-22T23:10:22.457Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>     1→&quot;&quot;&quot;PDF report generation using fpdf2 + matplotlib for charts.&quot;&quot;&quot;
+     2→
+     3→from __future__ import annotations
+     4→
+     5→import io
+     6→import re
+     7→import tempfile
+     8→from datetime import datetime
+     9→from typing import Any
+    10→
+    11→import matplotlib
+    12→matplotlib.use(&quot;Agg&quot;)
+    13→import matplotlib.pyplot as plt
+    14→from fpdf import FPDF
+    15→
+    16→from .models import IngestionSummary
+    17→
+    18→# ── Chart colors matching the app&#x27;s teal palette ─────────────────────
+    19→
+    20→COLORS = [
+    21→    &quot;#2dd4bf&quot;, &quot;#f59e0b&quot;, &quot;#5eead4&quot;, &quot;#f87171&quot;,
+    22→    &quot;#818cf8&quot;, &quot;#34d399&quot;, &quot;#fbbf24&quot;,
+    23→]
+    24→
+    25→
+    26→def _render_chart_to_tempfile(chart: dict[str, Any]) -&gt; str | None:
+    27→    &quot;&quot;&quot;Render a chart config to a temp PNG file. Returns path or None.&quot;&quot;&quot;
+    28→    chart_type = chart.get(&quot;type&quot;, &quot;bar&quot;)
+    29→    title = chart.get(&quot;title&quot;, &quot;&quot;)
+    30→    data = chart.get(&quot;data&quot;, {})
+    31→    labels = data.get(&quot;labels&quot;, [])
+    32→    datasets = data.get(&quot;datasets&quot;, [])
+    33→
+    34→    if not labels or not datasets:
+    35→        return None
+    36→
+    37→    fig, ax = plt.subplots(figsize=(7, 3.5))
+    38→    fig.patch.set_facecolor(&quot;white&quot;)
+    39→    ax.set_facecolor(&quot;white&quot;)
+    40→
+    41→    actual_type = chart_type
+    42→    if chart_type in (&quot;horizontalBar&quot;, &quot;stacked_bar&quot;):
+    43→        actual_type = &quot;bar&quot;
+    44→
+    45→    if actual_type == &quot;bar&quot;:
+    46→        import numpy as np
+    47→        x = np.arange(len(labels))
+    48→        width = 0.8 / max(len(datasets), 1)
+    49→        for i, ds in enumerate(datasets):
+    50→            values = ds.get(&quot;data&quot;, [])
+    51→            color = COLORS[i % len(COLORS)]
+    52→            if chart_type == &quot;horizontalBar&quot;:
+    53→                ax.barh(x + i * width, values, width, label=ds.get(&quot;label&quot;, &quot;&quot;), color=color)
+    54→            elif chart_type == &quot;stacked_bar&quot;:
+    55→                bottom = [0] * len(labels)
+    56→                if i &gt; 0:
+    57→                    for prev in datasets[:i]:
+    58→                        for j, v in enumerate(prev.get(&quot;data&quot;, [])):
+    59→                            if j &lt; len(bottom):
+    60→                                bottom[j] += v
+    61→                ax.bar(x, values, 0.6, bottom=bottom, label=ds.get(&quot;label&quot;, &quot;&quot;), color=color)
+    62→            else:
+    63→                ax.bar(x + i * width, values, width, label=ds.get(&quot;label&quot;, &quot;&quot;), color=color)
+    64→        if chart_type == &quot;horizontalBar&quot;:
+    65→            ax.set_yticks(x + width * (len(datasets) - 1) / 2)
+    66→            ax.set_yticklabels(labels, fontsize=8)
+    67→        else:
+    68→            ax.set_xticks(x + width * (len(datasets) - 1) / 2)
+    69→            ax.set_xticklabels(labels, fontsize=8, rotation=45, ha=&quot;right&quot;)
+    70→
+    71→    elif actual_type == &quot;line&quot;:
+    72→        for i, ds in enumerate(datasets):
+    73→            ax.plot(labels, ds.get(&quot;data&quot;, []), marker=&quot;o&quot;, markersize=4,
+    74→                    color=COLORS[i % len(COLORS)], label=ds.get(&quot;label&quot;, &quot;&quot;), linewidth=2)
+    75→        ax.tick_params(axis=&quot;x&quot;, rotation=45, labelsize=8)
+    76→
+    77→    elif actual_type in (&quot;pie&quot;, &quot;doughnut&quot;):
+    78→        values = datasets[0].get(&quot;data&quot;, []) if datasets else []
+    79→        colors = COLORS[:len(values)]
+    80→        wedgeprops = {&quot;width&quot;: 0.4} if actual_type == &quot;doughnut&quot; else {}
+    81→        ax.pie(values, labels=labels, colors=colors, autopct=&quot;%1.0f%%&quot;,
+    82→               textprops={&quot;fontsize&quot;: 8}, wedgeprops=wedgeprops)
+    83→
+    84→    elif actual_type == &quot;radar&quot;:
+    85→        import numpy as np
+    86→        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+    87→        angles += angles[:1]
+    88→        ax = fig.add_subplot(111, polar=True)
+    89→        for i, ds in enumerate(datasets):
+    90→            values = ds.get(&quot;data&quot;, []) + ds.get(&quot;data&quot;, [])[:1]
+    91→            ax.plot(angles, values, color=COLORS[i % len(COLORS)], linewidth=2, label=ds.get(&quot;label&quot;, &quot;&quot;))
+    92→            ax.fill(angles, values, color=COLORS[i % len(COLORS)], alpha=0.15)
+    93→        ax.set_xticks(angles[:-1])
+    94→        ax.set_xticklabels(labels, fontsize=8)
+    95→
+    96→    elif actual_type == &quot;scatter&quot;:
+    97→        for i, ds in enumerate(datasets):
+    98→            ax.scatter(range(len(ds.get(&quot;data&quot;, []))), ds.get(&quot;data&quot;, []),
+    99→                       color=COLORS[i % len(COLORS)], label=ds.get(&quot;label&quot;, &quot;&quot;), s=30)
+   100→
+   101→    if actual_type not in (&quot;pie&quot;, &quot;doughnut&quot;):
+   102→        ax.set_title(title, fontsize=11, fontweight=&quot;500&quot;, pad=12)
+   103→    else:
+   104→        ax.set_title(title, fontsize=11, fontweight=&quot;500&quot;, pad=12)
+   105→
+   106→    if len(datasets) &gt; 1:
+   107→        ax.legend(fontsize=8)
+   108→
+   109→    plt.tight_layout()
+   110→
+   111→    tmp = tempfile.NamedTemporaryFile(suffix=&quot;.png&quot;, delete=False)
+   112→    fig.savefig(tmp.name, format=&quot;png&quot;, dpi=150, bbox_inches=&quot;tight&quot;, facecolor=&quot;white&quot;)
+   113→    plt.close(fig)
+   114→    return tmp.name
+   115→
+   116→
+   117→def _safe_text(text: str) -&gt; str:
+   118→    &quot;&quot;&quot;Replace Unicode characters that might not be in all fonts.&quot;&quot;&quot;
+   119→    replacements = {
+   120→        &quot;\u2014&quot;: &quot;--&quot;,   # em dash
+   121→        &quot;\u2013&quot;: &quot;-&quot;,    # en dash
+   122→        &quot;\u2018&quot;: &quot;&#x27;&quot;,    # left single quote
+   123→        &quot;\u2019&quot;: &quot;&#x27;&quot;,    # right single quote
+   124→        &quot;\u201c&quot;: &#x27;&quot;&#x27;,    # left double quote
+   125→        &quot;\u201d&quot;: &#x27;&quot;&#x27;,    # right double quote
+   126→        &quot;\u2026&quot;: &quot;...&quot;,  # ellipsis
+   127→        &quot;\u00b7&quot;: &quot; - &quot;,  # middle dot
+   128→        &quot;\u2022&quot;: &quot;-&quot;,    # bullet
+   129→        &quot;\u2023&quot;: &quot;&gt;&quot;,    # triangular bullet
+   130→        &quot;\u25cf&quot;: &quot;-&quot;,    # black circle
+   131→        &quot;\u2192&quot;: &quot;-&gt;&quot;,   # right arrow
+   132→        &quot;\u2190&quot;: &quot;&lt;-&quot;,   # left arrow
+   133→        &quot;\u2265&quot;: &quot;&gt;=&quot;,   # &gt;=
+   134→        &quot;\u2264&quot;: &quot;&lt;=&quot;,   # &lt;=
+   135→        &quot;\u00a0&quot;: &quot; &quot;,    # non-breaking space
+   136→    }
+   137→    for k, v in replacements.items():
+   138→        text = text.replace(k, v)
+   139→    # Strip any remaining non-latin1 chars as last resort
+   140→    return text.encode(&quot;latin-1&quot;, errors=&quot;replace&quot;).decode(&quot;latin-1&quot;)
+   141→
+   142→
+   143→class ReportPDF(FPDF):
+   144→    &quot;&quot;&quot;Custom PDF with ReviewLens branding.&quot;&quot;&quot;
+   145→
+   146→    def __init__(self):
+   147→        super().__init__()
+   148→        self.set_auto_page_break(auto=True, margin=20)
+   149→
+   150→    def header(self):
+   151→        if self.page_no() &gt; 1:
+   152→            self.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 8)
+   153→            self.set_text_color(107, 125, 153)
+   154→            self.cell(0, 8, &quot;ReviewLens AI&quot;, align=&quot;L&quot;)
+   155→            self.ln(4)
+   156→            self.set_draw_color(45, 212, 191)
+   157→            self.set_line_width(0.3)
+   158→            self.line(10, self.get_y(), self.w - 10, self.get_y())
+   159→            self.ln(6)
+   160→
+   161→    def footer(self):
+   162→        self.set_y(-15)
+   163→        self.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 8)
+   164→        self.set_text_color(156, 163, 175)
+   165→        self.cell(0, 10, f&quot;Page {self.page_no()}/{{nb}}&quot;, align=&quot;C&quot;)
+   166→
+   167→
+   168→def generate_pdf(
+   169→    title: str,
+   170→    content_md: str,
+   171→    summary: IngestionSummary,
+   172→    charts: list[dict[str, Any]] | None = None,
+   173→) -&gt; bytes:
+   174→    &quot;&quot;&quot;Generate a styled PDF report. Returns PDF bytes.&quot;&quot;&quot;
+   175→
+   176→    # Pre-render charts to temp files
+   177→    chart_files: list[str | None] = []
+   178→    if charts:
+   179→        for chart in charts:
+   180→            chart_files.append(_render_chart_to_tempfile(chart))
+   181→
+   182→    pdf = ReportPDF()
+   183→    pdf.alias_nb_pages()
+   184→
+   185→    # ── Cover page ───────────────────────────────────────────────────
+   186→    pdf.add_page()
+   187→    pdf.ln(50)
+   188→
+   189→    # Logo text
+   190→    pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 16)
+   191→    pdf.set_text_color(107, 125, 153)
+   192→    pdf.cell(0, 10, &quot;Review&quot;, new_x=&quot;END&quot;)
+   193→    pdf.set_text_color(45, 212, 191)
+   194→    pdf.cell(0, 10, &quot;Lens&quot;, new_x=&quot;LMARGIN&quot;, new_y=&quot;NEXT&quot;)
+   195→    pdf.set_text_color(107, 125, 153)
+   196→    pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 10)
+   197→    pdf.cell(0, 6, &quot;AI&quot;, new_x=&quot;LMARGIN&quot;, new_y=&quot;NEXT&quot;)
+   198→
+   199→    pdf.ln(15)
+   200→
+   201→    # Title with teal left bar
+   202→    pdf.set_draw_color(45, 212, 191)
+   203→    pdf.set_line_width(1.2)
+   204→    y_before = pdf.get_y()
+   205→    pdf.set_x(18)
+   206→    pdf.set_font(&quot;Helvetica&quot;, &quot;B&quot;, 22)
+   207→    pdf.set_text_color(13, 17, 23)
+   208→    pdf.multi_cell(160, 10, _safe_text(title))
+   209→    y_after = pdf.get_y()
+   210→    pdf.line(14, y_before, 14, y_after)
+   211→
+   212→    pdf.ln(12)
+   213→
+   214→    # Metadata
+   215→    pdf.set_font(&quot;Courier&quot;, &quot;&quot;, 9)
+   216→    pdf.set_text_color(107, 125, 153)
+   217→    meta_lines = [
+   218→        f&quot;Product:          {summary.product_name}&quot;,
+   219→        f&quot;Platform:         {summary.platform}&quot;,
+   220→        f&quot;Reviews Analysed: {summary.total_reviews}&quot;,
+   221→    ]
+   222→    if summary.date_range:
+   223→        meta_lines.append(f&quot;Date Range:       {summary.date_range}&quot;)
+   224→    if summary.average_rating:
+   225→        meta_lines.append(f&quot;Average Rating:   {summary.average_rating:.1f}/5&quot;)
+   226→    meta_lines.append(f&quot;Report Generated: {datetime.utcnow().strftime(&#x27;%B %d, %Y&#x27;)}&quot;)
+   227→
+   228→    for line in meta_lines:
+   229→        pdf.cell(0, 6, _safe_text(line), new_x=&quot;LMARGIN&quot;, new_y=&quot;NEXT&quot;)
+   230→
+   231→    # ── Content pages ────────────────────────────────────────────────
+   232→    pdf.add_page()
+   233→
+   234→    # Parse markdown to structured blocks
+   235→    _render_markdown_to_pdf(pdf, content_md, chart_files)
+   236→
+   237→    # ── Footer on last page ──────────────────────────────────────────
+   238→    pdf.ln(10)
+   239→    pdf.set_draw_color(229, 231, 235)
+   240→    pdf.set_line_width(0.2)
+   241→    pdf.line(10, pdf.get_y(), pdf.w - 10, pdf.get_y())
+   242→    pdf.ln(4)
+   243→    pdf.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 8)
+   244→    pdf.set_text_color(156, 163, 175)
+   245→    now = datetime.utcnow().strftime(&quot;%B %d, %Y&quot;)
+   246→    pdf.cell(0, 8, f&quot;Generated by ReviewLens AI - {now}&quot;, align=&quot;C&quot;)
+   247→
+   248→    return pdf.output()
+   249→
+   250→
+   251→def _render_markdown_to_pdf(pdf: ReportPDF, md_text: str, chart_files: list[str | None]) -&gt; None:
+   252→    &quot;&quot;&quot;Parse markdown text and render it to the PDF with basic formatting.&quot;&quot;&quot;
+   253→
+   254→    lines = md_text.split(&quot;\n&quot;)
+   255→    in_list = False
+   256→    in_table = False
+   257→    table_rows: list[list[str]] = []
+   258→
+   259→    for line in lines:
+   260→        stripped = line.strip()
+   261→
+   262→        # Skip empty lines
+   263→        if not stripped:
+   264→            if in_table and table_rows:
+   265→                _render_table(pdf, table_rows)
+   266→                table_rows = []
+   267→                in_table = False
+   268→            pdf.ln(3)
+   269→            continue
+   270→
+   271→        # Chart markers
+   272→        chart_match = re.match(r&#x27;\[chart:(\d+)\]&#x27;, stripped)
+   273→        if chart_match:
+   274→            idx = int(chart_match.group(1))
+   275→            if idx &lt; len(chart_files) and chart_files[idx]:
+   276→                pdf.ln(4)
+   277→                pdf.image(chart_files[idx], x=15, w=pdf.w - 30)
+   278→                pdf.ln(4)
+   279→            continue
+   280→
+   281→        # Table rows
+   282→        if &quot;|&quot; in stripped and not stripped.startswith(&quot;#&quot;):
+   283→            cells = [c.strip() for c in stripped.split(&quot;|&quot;)]
+   284→            cells = [c for c in cells if c]  # Remove empty edge cells
+   285→            # Skip separator rows
+   286→            if all(re.match(r&#x27;^[-:]+$&#x27;, c) for c in cells):
+   287→                continue
+   288→            table_rows.append(cells)
+   289→            in_table = True
+   290→            continue
+   291→        elif in_table and table_rows:
+   292→            _render_table(pdf, table_rows)
+   293→            table_rows = []
+   294→            in_table = False
+   295→
+   296→        # Headings
+   297→        if stripped.startswith(&quot;# &quot;):
+   298→            pdf.ln(6)
+   299→            pdf.set_font(&quot;Helvetica&quot;, &quot;B&quot;, 16)
+   300→            pdf.set_text_color(13, 17, 23)
+   301→            pdf.multi_cell(0, 8, _strip_md(stripped[2:]))
+   302→            pdf.set_draw_color(45, 212, 191)
+   303→            pdf.set_line_width(0.6)
+   304→            pdf.line(10, pdf.get_y() + 1, pdf.w - 10, pdf.get_y() + 1)
+   305→            pdf.ln(4)
+   306→        elif stripped.startswith(&quot;## &quot;):
+   307→            pdf.ln(5)
+   308→            pdf.set_font(&quot;Helvetica&quot;, &quot;B&quot;, 13)
+   309→            pdf.set_text_color(13, 17, 23)
+   310→            pdf.multi_cell(0, 7, _strip_md(stripped[3:]))
+   311→            pdf.ln(2)
+   312→        elif stripped.startswith(&quot;### &quot;):
+   313→            pdf.ln(4)
+   314→            pdf.set_font(&quot;Helvetica&quot;, &quot;B&quot;, 11)
+   315→            pdf.set_text_color(55, 65, 81)
+   316→            pdf.multi_cell(0, 6, _strip_md(stripped[4:]))
+   317→            pdf.ln(2)
+   318→        # Blockquotes
+   319→        elif stripped.startswith(&quot;&gt; &quot;):
+   320→            pdf.set_draw_color(45, 212, 191)
+   321→            pdf.set_line_width(0.6)
+   322→            x = pdf.get_x()
+   323→            y = pdf.get_y()
+   324→            pdf.set_x(x + 6)
+   325→            pdf.set_font(&quot;Helvetica&quot;, &quot;I&quot;, 9)
+   326→            pdf.set_text_color(55, 65, 81)
+   327→            pdf.multi_cell(pdf.w - 30, 5, _strip_md(stripped[2:]))
+   328→            pdf.line(x + 3, y, x + 3, pdf.get_y())
+   329→            pdf.ln(2)
+   330→        # List items
+   331→        elif stripped.startswith(&quot;- &quot;) or stripped.startswith(&quot;* &quot;):
+   332→            pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 10)
+   333→            pdf.set_text_color(26, 35, 50)
+   334→            pdf.set_x(pdf.l_margin + 4)
+   335→            pdf.cell(4, 5, &quot;-&quot;)
+   336→            pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 8, 5, _strip_md(stripped[2:]))
+   337→            pdf.ln(1)
+   338→        elif re.match(r&#x27;^\d+\. &#x27;, stripped):
+   339→            num_match = re.match(r&#x27;^(\d+)\. (.*)&#x27;, stripped)
+   340→            if num_match:
+   341→                pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 10)
+   342→                pdf.set_text_color(26, 35, 50)
+   343→                pdf.set_x(pdf.l_margin + 4)
+   344→                pdf.cell(6, 5, f&quot;{num_match.group(1)}.&quot;)
+   345→                pdf.multi_cell(pdf.w - pdf.l_margin - pdf.r_margin - 10, 5, _strip_md(num_match.group(2)))
+   346→                pdf.ln(1)
+   347→        # Regular paragraph
+   348→        else:
+   349→            pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 10)
+   350→            pdf.set_text_color(26, 35, 50)
+   351→            pdf.multi_cell(0, 5, _strip_md(stripped))
+   352→            pdf.ln(2)
+   353→
+   354→    # Flush remaining table
+   355→    if in_table and table_rows:
+   356→        _render_table(pdf, table_rows)
+   357→
+   358→
+   359→def _render_table(pdf: ReportPDF, rows: list[list[str]]) -&gt; None:
+   360→    &quot;&quot;&quot;Render a simple table to the PDF.&quot;&quot;&quot;
+   361→    if not rows:
+   362→        return
+   363→
+   364→    pdf.ln(3)
+   365→    n_cols = max(len(r) for r in rows)
+   366→    col_w = (pdf.w - pdf.l_margin - pdf.r_margin) / max(n_cols, 1)
+   367→
+   368→    for i, row in enumerate(rows):
+   369→        if i == 0:
+   370→            # Header row
+   371→            pdf.set_font(&quot;Helvetica&quot;, &quot;B&quot;, 8)
+   372→            pdf.set_text_color(107, 114, 128)
+   373→            pdf.set_fill_color(243, 244, 246)
+   374→            for cell in row:
+   375→                pdf.cell(col_w, 6, _strip_md(cell)[:30], border=1, fill=True)
+   376→            pdf.ln()
+   377→        else:
+   378→            pdf.set_font(&quot;Helvetica&quot;, &quot;&quot;, 9)
+   379→            pdf.set_text_color(26, 35, 50)
+   380→            for j, cell in enumerate(row):
+   381→                pdf.cell(col_w, 5.5, _strip_md(cell)[:40], border=1)
+   382→            pdf.ln()
+   383→    pdf.ln(3)
+   384→
+   385→
+   386→def _strip_md(text: str) -&gt; str:
+   387→    &quot;&quot;&quot;Strip markdown formatting for plain text output.&quot;&quot;&quot;
+   388→    text = re.sub(r&#x27;\*\*(.+?)\*\*&#x27;, r&#x27;\1&#x27;, text)  # bold
+   389→    text = re.sub(r&#x27;\*(.+?)\*&#x27;, r&#x27;\1&#x27;, text)  # italic
+   390→    text = re.sub(r&#x27;`(.+?)`&#x27;, r&#x27;\1&#x27;, text)  # code
+   391→    text = re.sub(r&#x27;\[source:[^\]]+\]&#x27;, &#x27;&#x27;, text)  # citation markers
+   392→    text = re.sub(r&#x27;\[chart:\d+\]&#x27;, &#x27;&#x27;, text)  # chart markers
+   393→    text = re.sub(r&#x27;\[([^\]]+)\]\([^\)]+\)&#x27;, r&#x27;\1&#x27;, text)  # links
+   394→    return _safe_text(text.strip())
+   395→</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-10-26-604Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-10-26-604Z" class="timestamp-link"><time datetime="2026-03-22T23:10:26.604Z" data-timestamp="2026-03-22T23:10:26.604Z">2026-03-22T23:10:26.604Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Full rewrite of pdf.py addressing all 6 issues.</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-11-40-389Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-11-40-389Z" class="timestamp-link"><time datetime="2026-03-22T23:11:40.389Z" data-timestamp="2026-03-22T23:11:40.389Z">2026-03-22T23:11:40.389Z</time></a></div><div class="message-content"><div class="file-tool write-tool" data-tool-id="toolu_01JT9nQLXJYh6F2TpNvzfCrG">
+<div class="file-tool-header write-header"><span class="file-tool-icon">📝</span> Write <span class="file-tool-path">pdf.py</span></div>
+<div class="file-tool-fullpath">/Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py</div>
+<div class="truncatable"><div class="truncatable-content"><pre class="file-content">&#34;&#34;&#34;PDF report generation using fpdf2 + matplotlib for charts.&#34;&#34;&#34;
+
+from __future__ import annotations
+
+import re
+import tempfile
+from datetime import datetime
+from typing import Any
+
+import matplotlib
+matplotlib.use(&#34;Agg&#34;)
+import matplotlib.pyplot as plt
+from fpdf import FPDF
+
+from .models import IngestionSummary
+
+# ── Chart colors matching the app&#39;s teal palette ─────────────────────
+
+COLORS = [
+    &#34;#2dd4bf&#34;, &#34;#f59e0b&#34;, &#34;#5eead4&#34;, &#34;#f87171&#34;,
+    &#34;#818cf8&#34;, &#34;#34d399&#34;, &#34;#fbbf24&#34;,
+]
+
+
+def _render_chart_to_tempfile(chart: dict[str, Any]) -&gt; str | None:
+    &#34;&#34;&#34;Render a chart config to a temp PNG file. Returns path or None.&#34;&#34;&#34;
+    chart_type = chart.get(&#34;type&#34;, &#34;bar&#34;)
+    title = chart.get(&#34;title&#34;, &#34;&#34;)
+    data = chart.get(&#34;data&#34;, {})
+    labels = data.get(&#34;labels&#34;, [])
+    datasets = data.get(&#34;datasets&#34;, [])
+
+    if not labels or not datasets:
+        return None
+
+    fig, ax = plt.subplots(figsize=(7, 3.5))
+    fig.patch.set_facecolor(&#34;white&#34;)
+    ax.set_facecolor(&#34;white&#34;)
+
+    actual_type = chart_type
+    if chart_type in (&#34;horizontalBar&#34;, &#34;stacked_bar&#34;):
+        actual_type = &#34;bar&#34;
+
+    if actual_type == &#34;bar&#34;:
+        import numpy as np
+        x = np.arange(len(labels))
+        width = 0.8 / max(len(datasets), 1)
+        for i, ds in enumerate(datasets):
+            values = ds.get(&#34;data&#34;, [])
+            color = COLORS[i % len(COLORS)]
+            if chart_type == &#34;horizontalBar&#34;:
+                ax.barh(x + i * width, values, width, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+            elif chart_type == &#34;stacked_bar&#34;:
+                bottom = [0] * len(labels)
+                if i &gt; 0:
+                    for prev in datasets[:i]:
+                        for j, v in enumerate(prev.get(&#34;data&#34;, [])):
+                            if j &lt; len(bottom):
+                                bottom[j] += v
+                ax.bar(x, values, 0.6, bottom=bottom, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+            else:
+                ax.bar(x + i * width, values, width, label=ds.get(&#34;label&#34;, &#34;&#34;), color=color)
+        if chart_type == &#34;horizontalBar&#34;:
+            ax.set_yticks(x + width * (len(datasets) - 1) / 2)
+            ax.set_yticklabels(labels, fontsize=8)
+        else:
+            ax.set_xticks(x + width * (len(datasets) - 1) / 2)
+            ax.set_xticklabels(labels, fontsize=8, rotation=45, ha=&#34;right&#34;)
+    elif actual_type == &#34;line&#34;:
+        for i, ds in enumerate(datasets):
+            ax.plot(labels, ds.get(&#34;data&#34;, []), marker=&#34;o&#34;, markersize=4,
+                    color=COLORS[i % len(COLORS)], label=ds.get(&#34;label&#34;, &#34;&#34;), linewidth=2)
+        ax.tick_params(axis=&#34;x&#34;, rotation=45, labelsize=8)
+    elif actual_type in (&#34;pie&#34;, &#34;doughnut&#34;):
+        values = datasets[0].get(&#34;data&#34;, []) if datasets else []
+        colors = COLORS[:len(values)]
+        wedgeprops = {&#34;width&#34;: 0.4} if actual_type == &#34;doughnut&#34; else {}
+        ax.pie(values, labels=labels, colors=colors, autopct=&#34;%1.0f%%&#34;,
+               textprops={&#34;fontsize&#34;: 8}, wedgeprops=wedgeprops)
+    elif actual_type == &#34;radar&#34;:
+        import numpy as np
+        angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+        angles += angles[:1]
+        ax = fig.add_subplot(111, polar=True)
+        for i, ds in enumerate(datasets):
+            values = ds.get(&#34;data&#34;, []) + ds.get(&#34;data&#34;, [])[:1]
+            ax.plot(angles, values, color=COLORS[i % len(COLORS)], linewidth=2, label=ds.get(&#34;label&#34;, &#34;&#34;))
+            ax.fill(angles, values, color=COLORS[i % len(COLORS)], alpha=0.15)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(labels, fontsize=8)
+    elif actual_type == &#34;scatter&#34;:
+        for i, ds in enumerate(datasets):
+            ax.scatter(range(len(ds.get(&#34;data&#34;, []))), ds.get(&#34;data&#34;, []),
+                       color=COLORS[i % len(COLORS)], label=ds.get(&#34;label&#34;, &#34;&#34;), s=30)
+
+    ax.set_title(title, fontsize=11, fontweight=&#34;500&#34;, pad=12)
+    if len(datasets) &gt; 1:
+        ax.legend(fontsize=8)
+
+    plt.tight_layout()
+    tmp = tempfile.NamedTemporaryFile(suffix=&#34;.png&#34;, delete=False)
+    fig.savefig(tmp.name, format=&#34;png&#34;, dpi=150, bbox_inches=&#34;tight&#34;, facecolor=&#34;white&#34;)
+    plt.close(fig)
+    return tmp.name
+
+
+# ── Text sanitization ────────────────────────────────────────────────
+
+_UNICODE_MAP = {
+    &#34;\u2014&#34;: &#34;--&#34;, &#34;\u2013&#34;: &#34;-&#34;, &#34;\u2018&#34;: &#34;&#39;&#34;, &#34;\u2019&#34;: &#34;&#39;&#34;,
+    &#34;\u201c&#34;: &#39;&#34;&#39;, &#34;\u201d&#34;: &#39;&#34;&#39;, &#34;\u2026&#34;: &#34;...&#34;, &#34;\u00b7&#34;: &#34; - &#34;,
+    &#34;\u2022&#34;: &#34;-&#34;, &#34;\u2023&#34;: &#34;&gt;&#34;, &#34;\u25cf&#34;: &#34;-&#34;, &#34;\u2192&#34;: &#34;-&gt;&#34;,
+    &#34;\u2190&#34;: &#34;&lt;-&#34;, &#34;\u2265&#34;: &#34;&gt;=&#34;, &#34;\u2264&#34;: &#34;&lt;=&#34;, &#34;\u00a0&#34;: &#34; &#34;,
+    &#34;\u2705&#34;: &#34;[OK]&#34;, &#34;\u274c&#34;: &#34;[X]&#34;, &#34;\u26a0&#34;: &#34;[!]&#34;,
+    &#34;\u2b50&#34;: &#34;*&#34;,
+}
+
+# Emoji severity indicators -&gt; text badges
+_EMOJI_BADGES = [
+    (re.compile(r&#39;[\U0001f534\u2b55]&#39;), &#34;[HIGH]&#34;),     # red circle
+    (re.compile(r&#39;[\U0001f7e1\U0001f7e0]&#39;), &#34;[MED]&#34;),  # yellow/orange circle
+    (re.compile(r&#39;[\U0001f7e2\u2705]&#39;), &#34;[LOW]&#34;),       # green circle
+    (re.compile(r&#39;[\U0001f6a8]&#39;), &#34;[!]&#34;),               # siren
+    (re.compile(r&#39;[\U0001f4ca\U0001f4c8\U0001f4c9]&#39;), &#34;&#34;),  # chart emojis
+    (re.compile(r&#39;[\U0001f3c6\U0001f947\U0001f948\U0001f949]&#39;), &#34;&#34;),  # medal emojis
+    (re.compile(r&#39;[\U0001f4cb\U0001f4dd\U0001f4d1]&#39;), &#34;&#34;),  # clipboard/memo
+    (re.compile(r&#39;[\U0001f50d\U0001f50e]&#39;), &#34;&#34;),        # magnifying glass
+]
+
+
+def _safe_text(text: str) -&gt; str:
+    &#34;&#34;&#34;Replace Unicode characters with safe Latin-1 equivalents.&#34;&#34;&#34;
+    for pattern, replacement in _EMOJI_BADGES:
+        text = pattern.sub(replacement, text)
+    for k, v in _UNICODE_MAP.items():
+        text = text.replace(k, v)
+    # Strip any remaining non-latin1 chars
+    return text.encode(&#34;latin-1&#34;, errors=&#34;replace&#34;).decode(&#34;latin-1&#34;)
+
+
+def _strip_md(text: str) -&gt; str:
+    &#34;&#34;&#34;Strip markdown formatting for plain text output.&#34;&#34;&#34;
+    text = re.sub(r&#39;\*\*(.+?)\*\*&#39;, r&#39;\1&#39;, text)
+    text = re.sub(r&#39;\*(.+?)\*&#39;, r&#39;\1&#39;, text)
+    text = re.sub(r&#39;`(.+?)`&#39;, r&#39;\1&#39;, text)
+    text = re.sub(r&#39;\[source:[^\]]+\]&#39;, &#39;&#39;, text)
+    text = re.sub(r&#39;\[chart:\d+\]&#39;, &#39;&#39;, text)
+    text = re.sub(r&#39;\[([^\]]+)\]\([^\)]+\)&#39;, r&#39;\1&#39;, text)
+    return _safe_text(text.strip())
+
+
+# ── PDF class ────────────────────────────────────────────────────────
+
+class ReportPDF(FPDF):
+    &#34;&#34;&#34;Custom PDF with ReviewLens branding.&#34;&#34;&#34;
+
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=22)
+        self.set_margins(left=18, top=20, right=18)
+
+    def header(self):
+        if self.page_no() &gt; 1:
+            self.set_y(8)
+            self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+            self.set_text_color(45, 212, 191)
+            self.cell(0, 6, &#34;ReviewLens AI&#34;, align=&#34;L&#34;)
+            self.set_draw_color(45, 212, 191)
+            self.set_line_width(0.3)
+            y = self.get_y() + 7
+            self.line(self.l_margin, y, self.w - self.r_margin, y)
+            self.set_y(y + 4)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+        self.set_text_color(156, 163, 175)
+        self.cell(0, 10, f&#34;Page {self.page_no()}/{{nb}}&#34;, align=&#34;C&#34;)
+
+
+# ── PDF generation ───────────────────────────────────────────────────
+
+def generate_pdf(
+    title: str,
+    content_md: str,
+    summary: IngestionSummary,
+    charts: list[dict[str, Any]] | None = None,
+) -&gt; bytes:
+    &#34;&#34;&#34;Generate a styled PDF report. Returns PDF bytes.&#34;&#34;&#34;
+
+    # Pre-render charts to temp files
+    chart_files: list[str | None] = []
+    if charts:
+        for chart in charts:
+            chart_files.append(_render_chart_to_tempfile(chart))
+
+    # Clean title of pipe chars and other artifacts
+    clean_title = _safe_text(title.replace(&#34;|&#34;, &#34;-&#34;).replace(&#34;  &#34;, &#34; &#34;).strip())
+
+    pdf = ReportPDF()
+    pdf.alias_nb_pages()
+
+    # ── Cover page ───────────────────────────────────────────────────
+    pdf.add_page()
+
+    # Center the logo + title in the top portion
+    pdf.ln(35)
+
+    # Logo
+    pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 24)
+    pdf.set_text_color(107, 125, 153)
+    logo_text = &#34;ReviewLens&#34;
+    logo_w = pdf.get_string_width(logo_text)
+    ai_w = pdf.get_string_width(&#34; AI&#34;)
+    total_logo_w = logo_w + ai_w
+    pdf.set_x((pdf.w - total_logo_w) / 2)
+    pdf.cell(logo_w, 12, &#34;Review&#34;, new_x=&#34;END&#34;)
+    pdf.set_text_color(45, 212, 191)
+    pdf.cell(0, 12, &#34;Lens&#34;, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+    pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 12)
+    pdf.set_text_color(107, 125, 153)
+    pdf.cell(0, 6, &#34;AI&#34;, align=&#34;C&#34;, new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+
+    pdf.ln(18)
+
+    # Title in teal
+    pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 20)
+    pdf.set_text_color(45, 212, 191)
+    pdf.multi_cell(0, 10, clean_title, align=&#34;C&#34;)
+
+    pdf.ln(16)
+
+    # Metadata box
+    now = datetime.utcnow().strftime(&#34;%B %d, %Y&#34;)
+    meta_items = [
+        (&#34;Product&#34;, summary.product_name),
+        (&#34;Platform&#34;, summary.platform),
+        (&#34;Reviews Analysed&#34;, str(summary.total_reviews)),
+    ]
+    if summary.date_range:
+        meta_items.append((&#34;Date Range&#34;, summary.date_range))
+    if summary.average_rating:
+        meta_items.append((&#34;Average Rating&#34;, f&#34;{summary.average_rating:.1f} / 5&#34;))
+    meta_items.append((&#34;Report Generated&#34;, now))
+
+    box_x = 35
+    box_w = pdf.w - 70
+    box_y = pdf.get_y()
+
+    # Draw box border
+    pdf.set_draw_color(229, 231, 235)
+    pdf.set_line_width(0.4)
+    line_h = 7
+    box_h = len(meta_items) * line_h + 12
+    pdf.rect(box_x, box_y, box_w, box_h)
+
+    # Top teal accent line on the box
+    pdf.set_draw_color(45, 212, 191)
+    pdf.set_line_width(1.0)
+    pdf.line(box_x, box_y, box_x + box_w, box_y)
+
+    pdf.set_y(box_y + 6)
+    for label, value in meta_items:
+        pdf.set_x(box_x + 8)
+        pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 9)
+        pdf.set_text_color(107, 125, 153)
+        pdf.cell(40, line_h, _safe_text(label))
+        pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 9)
+        pdf.set_text_color(26, 35, 50)
+        pdf.cell(0, line_h, _safe_text(value), new_x=&#34;LMARGIN&#34;, new_y=&#34;NEXT&#34;)
+
+    # ── Content pages ────────────────────────────────────────────────
+    pdf.add_page()
+    _render_markdown_to_pdf(pdf, content_md, chart_files)
+
+    # ── Final footer ─────────────────────────────────────────────────
+    pdf.ln(10)
+    pdf.set_draw_color(229, 231, 235)
+    pdf.set_line_width(0.2)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(4)
+    pdf.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 8)
+    pdf.set_text_color(156, 163, 175)
+    pdf.cell(0, 8, f&#34;Generated by ReviewLens AI - {now}&#34;, align=&#34;C&#34;)
+
+    return pdf.output()
+
+
+# ── Markdown rendering ───────────────────────────────────────────────
+
+def _render_markdown_to_pdf(pdf: ReportPDF, md_text: str, chart_files: list[str | None]) -&gt; None:
+    &#34;&#34;&#34;Parse markdown text and render to PDF with formatting.&#34;&#34;&#34;
+
+    lines = md_text.split(&#34;\n&#34;)
+    in_table = False
+    table_rows: list[list[str]] = []
+    content_w = pdf.w - pdf.l_margin - pdf.r_margin
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Empty lines
+        if not stripped:
+            if in_table and table_rows:
+                _render_table(pdf, table_rows)
+                table_rows = []
+                in_table = False
+            pdf.ln(3)
+            continue
+
+        # Horizontal rules
+        if re.match(r&#39;^-{3,}$&#39;, stripped) or re.match(r&#39;^\*{3,}$&#39;, stripped):
+            if in_table and table_rows:
+                _render_table(pdf, table_rows)
+                table_rows = []
+                in_table = False
+            pdf.ln(3)
+            pdf.set_draw_color(45, 212, 191)
+            pdf.set_line_width(0.3)
+            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+            pdf.ln(5)
+            continue
+
+        # Chart markers
+        chart_match = re.match(r&#39;\[chart:(\d+)\]&#39;, stripped)
+        if chart_match:
+            idx = int(chart_match.group(1))
+            if idx &lt; len(chart_files) and chart_files[idx]:
+                pdf.ln(4)
+                pdf.image(chart_files[idx], x=pdf.l_margin, w=content_w)
+                pdf.ln(4)
+            continue
+
+        # Table rows
+        if &#34;|&#34; in stripped and not stripped.startswith(&#34;#&#34;):
+            cells = [c.strip() for c in stripped.split(&#34;|&#34;)]
+            cells = [c for c in cells if c]
+            if all(re.match(r&#39;^[-:]+$&#39;, c) for c in cells):
+                continue
+            table_rows.append(cells)
+            in_table = True
+            continue
+        elif in_table and table_rows:
+            _render_table(pdf, table_rows)
+            table_rows = []
+            in_table = False
+
+        # Headings
+        if stripped.startswith(&#34;# &#34;):
+            pdf.ln(6)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 16)
+            pdf.set_text_color(13, 17, 23)
+            pdf.multi_cell(content_w, 8, _strip_md(stripped[2:]))
+            pdf.set_draw_color(45, 212, 191)
+            pdf.set_line_width(0.6)
+            pdf.line(pdf.l_margin, pdf.get_y() + 1, pdf.w - pdf.r_margin, pdf.get_y() + 1)
+            pdf.ln(4)
+        elif stripped.startswith(&#34;## &#34;):
+            pdf.ln(5)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 13)
+            pdf.set_text_color(13, 17, 23)
+            pdf.multi_cell(content_w, 7, _strip_md(stripped[3:]))
+            pdf.ln(2)
+        elif stripped.startswith(&#34;### &#34;):
+            pdf.ln(4)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 11)
+            pdf.set_text_color(55, 65, 81)
+            pdf.multi_cell(content_w, 6, _strip_md(stripped[4:]))
+            pdf.ln(2)
+        # Blockquotes
+        elif stripped.startswith(&#34;&gt; &#34;):
+            pdf.set_draw_color(45, 212, 191)
+            pdf.set_line_width(0.6)
+            x = pdf.get_x()
+            y = pdf.get_y()
+            pdf.set_x(x + 6)
+            pdf.set_font(&#34;Helvetica&#34;, &#34;I&#34;, 9)
+            pdf.set_text_color(55, 65, 81)
+            pdf.multi_cell(content_w - 10, 5, _strip_md(stripped[2:]))
+            pdf.line(x + 3, y, x + 3, pdf.get_y())
+            pdf.ln(2)
+        # List items
+        elif stripped.startswith(&#34;- &#34;) or stripped.startswith(&#34;* &#34;):
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+            pdf.set_text_color(26, 35, 50)
+            pdf.set_x(pdf.l_margin + 4)
+            pdf.cell(4, 5, &#34;-&#34;)
+            pdf.multi_cell(content_w - 8, 5, _strip_md(stripped[2:]))
+            pdf.ln(1)
+        elif re.match(r&#39;^\d+\. &#39;, stripped):
+            num_match = re.match(r&#39;^(\d+)\. (.*)&#39;, stripped)
+            if num_match:
+                pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+                pdf.set_text_color(26, 35, 50)
+                pdf.set_x(pdf.l_margin + 4)
+                pdf.cell(6, 5, f&#34;{num_match.group(1)}.&#34;)
+                pdf.multi_cell(content_w - 10, 5, _strip_md(num_match.group(2)))
+                pdf.ln(1)
+        # Regular paragraph
+        else:
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 10)
+            pdf.set_text_color(26, 35, 50)
+            pdf.multi_cell(content_w, 5, _strip_md(stripped))
+            pdf.ln(2)
+
+    # Flush remaining table
+    if in_table and table_rows:
+        _render_table(pdf, table_rows)
+
+
+def _render_table(pdf: ReportPDF, rows: list[list[str]]) -&gt; None:
+    &#34;&#34;&#34;Render a table with proper column sizing.&#34;&#34;&#34;
+    if not rows:
+        return
+
+    pdf.ln(3)
+    n_cols = max(len(r) for r in rows)
+    content_w = pdf.w - pdf.l_margin - pdf.r_margin
+
+    # Calculate column widths based on content
+    col_widths = [0.0] * n_cols
+    for row in rows:
+        for j, cell in enumerate(row):
+            if j &lt; n_cols:
+                w = pdf.get_string_width(_strip_md(cell)) + 4
+                col_widths[j] = max(col_widths[j], w)
+
+    # Normalize to fit content width
+    total = sum(col_widths)
+    if total &gt; 0:
+        col_widths = [w / total * content_w for w in col_widths]
+    else:
+        col_widths = [content_w / n_cols] * n_cols
+
+    for i, row in enumerate(rows):
+        if i == 0:
+            pdf.set_font(&#34;Helvetica&#34;, &#34;B&#34;, 8)
+            pdf.set_text_color(107, 114, 128)
+            pdf.set_fill_color(243, 244, 246)
+            for j, cell in enumerate(row):
+                w = col_widths[j] if j &lt; len(col_widths) else col_widths[-1]
+                pdf.cell(w, 6, _strip_md(cell)[:40], border=1, fill=True)
+            pdf.ln()
+        else:
+            pdf.set_font(&#34;Helvetica&#34;, &#34;&#34;, 8)
+            pdf.set_text_color(26, 35, 50)
+            for j, cell in enumerate(row):
+                w = col_widths[j] if j &lt; len(col_widths) else col_widths[-1]
+                pdf.cell(w, 5.5, _strip_md(cell)[:50], border=1)
+            pdf.ln()
+    pdf.ln(3)
+</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-11-40-440Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-11-40-440Z" class="timestamp-link"><time datetime="2026-03-22T23:11:40.440Z" data-timestamp="2026-03-22T23:11:40.440Z">2026-03-22T23:11:40.440Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>The file /Users/shaynelarocque/Documents/GitHub/futuresight/reviewlens/app/pdf.py has been updated successfully.</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-11-45-517Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-11-45-517Z" class="timestamp-link"><time datetime="2026-03-22T23:11:45.517Z" data-timestamp="2026-03-22T23:11:45.517Z">2026-03-22T23:11:45.517Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01Vm4XP8qabZCvcNYPi8k96R">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Syntax check</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">python3 -c &#34;import ast; ast.parse(open(&#39;app/pdf.py&#39;).read()); print(&#39;OK&#39;)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-11-45-655Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-11-45-655Z" class="timestamp-link"><time datetime="2026-03-22T23:11:45.655Z" data-timestamp="2026-03-22T23:11:45.655Z">2026-03-22T23:11:45.655Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>OK</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-11-57-026Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-11-57-026Z" class="timestamp-link"><time datetime="2026-03-22T23:11:57.026Z" data-timestamp="2026-03-22T23:11:57.026Z">2026-03-22T23:11:57.026Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Server should auto-reload. Fixes:</p>
+<ol>
+<li><strong>Cover page</strong> — Logo centered ("ReviewLens" with teal "Lens"), title in teal below, metadata in a bordered box with teal top accent. No monospace, no broken split.</li>
+<li><strong>Horizontal rules</strong> — <code>---</code> now detected as regex and rendered as a teal line with spacing.</li>
+<li><strong>Tables</strong> — Column widths calculated from content (proportional), font reduced to 8pt, cell text limit increased to 50 chars.</li>
+<li><strong>Emoji/Unicode</strong> — Full emoji-to-text replacement pipeline: 🔴→[HIGH], 🟡→[MED], 🟢→[LOW], plus chart/medal/clipboard emojis stripped. All remaining non-latin1 chars replaced.</li>
+<li><strong>Header</strong> — Repositioned: teal italic "ReviewLens AI" at top, teal line below, proper spacing. No strikethrough — the old code drew the line through the text position.</li>
+<li><strong>Margins</strong> — Increased to 18mm left/right, 20mm top. Content width calculated from margins consistently throughout.</li>
+</ol></div></div></div>
+<div class="message user" id="msg-2026-03-22T23-19-18-201Z"><div class="message-header"><span class="role-label">User</span><a href="#msg-2026-03-22T23-19-18-201Z" class="timestamp-link"><time datetime="2026-03-22T23:19:18.201Z" data-timestamp="2026-03-22T23:19:18.201Z">2026-03-22T23:19:18.201Z</time></a></div><div class="message-content">
+<div class="user-content"><p>Commit</p></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-19-22-123Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-19-22-123Z" class="timestamp-link"><time datetime="2026-03-22T23:19:22.123Z" data-timestamp="2026-03-22T23:19:22.123Z">2026-03-22T23:19:22.123Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_012kS5K1DUBFV1718EAtu9iT">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Show status and diff stats</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git status &amp;&amp; git diff --stat HEAD</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-19-22-209Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-19-22-209Z" class="timestamp-link"><time datetime="2026-03-22T23:19:22.209Z" data-timestamp="2026-03-22T23:19:22.209Z">2026-03-22T23:19:22.209Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>On branch main
+Your branch is up to date with &#x27;origin/main&#x27;.
+
+Changes not staged for commit:
+  (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)
+  (use &quot;git restore &lt;file&gt;...&quot; to discard changes in working directory)
+	modified:   app/main.py
+	modified:   app/models.py
+	modified:   app/prompts.py
+	modified:   app/rendering.py
+	modified:   app/tools/report_tools.py
+	modified:   requirements.txt
+	modified:   static/app.js
+	modified:   static/style.css
+	modified:   templates/app.html
+
+Untracked files:
+  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)
+	app/pdf.py
+
+no changes added to commit (use &quot;git add&quot; and/or &quot;git commit -a&quot;)
+ app/main.py               | 122 +++++++++++++++++++++++++++++++++++++++++++---
+ app/models.py             |   1 +
+ app/prompts.py            |   3 +-
+ app/rendering.py          |  38 ++++++++++++++-
+ app/tools/report_tools.py |  91 +++++++++++++++++++++++++++++++++-
+ requirements.txt          |   2 +
+ static/app.js             |  11 ++++-
+ static/style.css          |  83 +++++++++++++++++++++++++++++++
+ templates/app.html        |  16 ++++++
+ 9 files changed, 355 insertions(+), 12 deletions(-)</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-19-36-808Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-19-36-808Z" class="timestamp-link"><time datetime="2026-03-22T23:19:36.808Z" data-timestamp="2026-03-22T23:19:36.808Z">2026-03-22T23:19:36.808Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01HQAQ87k8gNVqYin26H8U94">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Commit all changes</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git add app/pdf.py app/main.py app/models.py app/prompts.py app/rendering.py app/tools/report_tools.py requirements.txt static/app.js static/style.css templates/app.html Dockerfile &amp;&amp; git commit -m &#34;$(cat &lt;&lt;&#39;EOF&#39;
+PDF report generation, download cards, bug fixes
+
+New compile_report tool generates branded PDF reports via fpdf2 +
+matplotlib. Cover page with centered ReviewLens logo, teal title,
+metadata box. Content pages with heading hierarchy, teal accent
+lines, blockquotes, tables with proportional columns, and inline
+chart PNGs. Running header + page numbers.
+
+Full Unicode sanitization pipeline: emoji severity indicators
+(red/yellow/green circles) replaced with [HIGH]/[MED]/[LOW] text
+badges. Em dashes, smart quotes, bullets converted to Latin-1 safe
+equivalents.
+
+Download endpoint GET /api/report/{session_id}/download serves PDF.
+Report URLs in chat rendered as styled download cards (PDF icon,
+title, teal download button). Sidebar shows Report PDF link when
+report_generated_at is set.
+
+Also: scroll snap fix (MutationObserver only fires on new child
+nodes, not chart data toggles), unmatched [chart:N] markers stripped,
+scrape flow now triggers auto-analysis, workspace name generation
+via Haiku, CSV download endpoint, _emit rename fix in _run_scrape.
+
+Co-Authored-By: Claude Opus 4.6 (1M context) &lt;noreply@anthropic.com&gt;
+EOF
+)&#34;</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-19-36-923Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-19-36-923Z" class="timestamp-link"><time datetime="2026-03-22T23:19:36.923Z" data-timestamp="2026-03-22T23:19:36.923Z">2026-03-22T23:19:36.923Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><div class="commit-card"><span class="commit-card-hash">f451c96</span> PDF report generation, download cards, bug fixes</div><pre>10 files changed, 806 insertions(+), 12 deletions(-)
+ create mode 100644 app/pdf.py</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-19-41-071Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-19-41-071Z" class="timestamp-link"><time datetime="2026-03-22T23:19:41.071Z" data-timestamp="2026-03-22T23:19:41.071Z">2026-03-22T23:19:41.071Z</time></a></div><div class="message-content">
+<div class="tool-use bash-tool" data-tool-id="toolu_01AfzAT4xJkAN3pEXjN1aNai">
+<div class="tool-header"><span class="tool-icon">$</span> Bash</div>
+<div class="tool-description">Push to GitHub</div><div class="truncatable"><div class="truncatable-content"><pre class="bash-command">git push origin main</pre></div><button class="expand-btn">Show more</button></div>
+</div></div></div>
+<div class="message tool-reply" id="msg-2026-03-22T23-19-41-682Z"><div class="message-header"><span class="role-label">Tool reply</span><a href="#msg-2026-03-22T23-19-41-682Z" class="timestamp-link"><time datetime="2026-03-22T23:19:41.682Z" data-timestamp="2026-03-22T23:19:41.682Z">2026-03-22T23:19:41.682Z</time></a></div><div class="message-content"><div class="tool-result"><div class="truncatable"><div class="truncatable-content"><pre>To https://github.com/shaynelarocque/reviewlens.git
+   b6ae78d..f451c96  main -&gt; main</pre></div><button class="expand-btn">Show more</button></div></div></div></div>
+<div class="message assistant" id="msg-2026-03-22T23-19-45-740Z"><div class="message-header"><span class="role-label">Assistant</span><a href="#msg-2026-03-22T23-19-45-740Z" class="timestamp-link"><time datetime="2026-03-22T23:19:45.740Z" data-timestamp="2026-03-22T23:19:45.740Z">2026-03-22T23:19:45.740Z</time></a></div><div class="message-content">
+<div class="assistant-text"><p>Pushed <code>f451c96</code> to <code>main</code>.</p></div></div></div>
+        
+
+<div class="pagination">
+<a href="index.html" class="index-link">Index</a>
+<a href="page-009.html">&larr; Prev</a>
+<a href="page-001.html">1</a>
+<a href="page-002.html">2</a>
+<a href="page-003.html">3</a>
+<a href="page-004.html">4</a>
+<a href="page-005.html">5</a>
+<a href="page-006.html">6</a>
+<a href="page-007.html">7</a>
+<a href="page-008.html">8</a>
+<a href="page-009.html">9</a>
+<span class="current">10</span>
+<a href="page-011.html">11</a>
+<a href="page-011.html">Next &rarr;</a>
+</div>
+
+    </div>
+    <script>
+document.querySelectorAll('time[data-timestamp]').forEach(function(el) {
+    const timestamp = el.getAttribute('data-timestamp');
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    if (isToday) { el.textContent = timeStr; }
+    else { el.textContent = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' ' + timeStr; }
+});
+document.querySelectorAll('pre.json').forEach(function(el) {
+    let text = el.textContent;
+    text = text.replace(/"([^"]+)":/g, '<span style="color: #ce93d8">"$1"</span>:');
+    text = text.replace(/: "([^"]*)"/g, ': <span style="color: #81d4fa">"$1"</span>');
+    text = text.replace(/: (\d+)/g, ': <span style="color: #ffcc80">$1</span>');
+    text = text.replace(/: (true|false|null)/g, ': <span style="color: #f48fb1">$1</span>');
+    el.innerHTML = text;
+});
+document.querySelectorAll('.truncatable').forEach(function(wrapper) {
+    const content = wrapper.querySelector('.truncatable-content');
+    const btn = wrapper.querySelector('.expand-btn');
+    if (content.scrollHeight > 250) {
+        wrapper.classList.add('truncated');
+        btn.addEventListener('click', function() {
+            if (wrapper.classList.contains('truncated')) { wrapper.classList.remove('truncated'); wrapper.classList.add('expanded'); btn.textContent = 'Show less'; }
+            else { wrapper.classList.remove('expanded'); wrapper.classList.add('truncated'); btn.textContent = 'Show more'; }
+        });
+    }
+});
+</script>
+</body>
+</html>
