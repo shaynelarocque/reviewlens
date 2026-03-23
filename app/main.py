@@ -567,4 +567,4 @@ async def chat_stream(session_id: str):
 
             await asyncio.sleep(0.15)
 
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(event_generator(), ping=15)
