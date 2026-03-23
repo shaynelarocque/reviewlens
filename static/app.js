@@ -372,14 +372,19 @@ function listenForResponse() {
     _log.error("SSE error event:", e);
   });
 
-  eventSource.onerror = function (e) {
+  eventSource.onerror = function () {
     _log.error("SSE connection error — readyState:", eventSource.readyState);
     eventSource.close();
     eventSource = null;
-    removeThinking();
-    _sending = false;
-    chatInput.disabled = false;
-    if (sendBtn) sendBtn.disabled = false;
+    // Agent task keeps running server-side — reconnect after a short delay
+    if (_sending) {
+      _log.info("SSE reconnecting in 2s…");
+      setTimeout(function () {
+        if (_sending) listenForResponse();
+      }, 2000);
+    } else {
+      removeThinking();
+    }
   };
 }
 
