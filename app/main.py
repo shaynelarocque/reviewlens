@@ -141,7 +141,6 @@ def _shell_context(request: Request, session=None):
         auto_analysis = has_trigger and not has_response
 
     ctx = {
-        "request": request,
         "sessions": sessions,
         "session": session,
         "summary": session.summary if session else None,
@@ -155,7 +154,7 @@ def _shell_context(request: Request, session=None):
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("app.html", _shell_context(request))
+    return templates.TemplateResponse(request, "app.html", context=_shell_context(request))
 
 
 @app.get("/chat/{session_id}", response_class=HTMLResponse)
@@ -163,7 +162,7 @@ async def chat_page(request: Request, session_id: str):
     session = store.load_session(session_id)
     if not session:
         return HTMLResponse("<h1>Session not found</h1>", status_code=404)
-    return templates.TemplateResponse("app.html", _shell_context(request, session))
+    return templates.TemplateResponse(request, "app.html", context=_shell_context(request, session))
 
 
 # ── CSV Upload ───────────────────────────────────────────────────────
@@ -182,15 +181,17 @@ async def upload_csv(
         reviews = await parse_csv(content, platform=platform, product_name=product_name)
     except Exception as e:
         return templates.TemplateResponse(
+            request,
             "partials/error.html",
-            {"request": request, "error": f"Failed to parse CSV: {e}"},
+            context={"error": f"Failed to parse CSV: {e}"},
             status_code=400,
         )
 
     if not reviews:
         return templates.TemplateResponse(
+            request,
             "partials/error.html",
-            {"request": request, "error": "No reviews found in the CSV. Make sure it has a text/review column."},
+            context={"error": "No reviews found in the CSV. Make sure it has a text/review column."},
             status_code=400,
         )
 
@@ -235,8 +236,9 @@ async def load_sample(
     path = SAMPLE_DIR / filename
     if not path.exists() or not path.suffix == ".csv" or ".." in filename:
         return templates.TemplateResponse(
+            request,
             "partials/error.html",
-            {"request": request, "error": "Sample file not found."},
+            context={"error": "Sample file not found."},
             status_code=400,
         )
 
@@ -254,8 +256,9 @@ async def load_sample(
 
     if not reviews:
         return templates.TemplateResponse(
+            request,
             "partials/error.html",
-            {"request": request, "error": "Could not parse reviews from this sample file."},
+            context={"error": "Could not parse reviews from this sample file."},
             status_code=400,
         )
 
