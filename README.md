@@ -4,8 +4,6 @@
 
 Built for the FutureSight take-home assignment.
 
-### [Demo Video](https://drive.google.com/file/d/1QKHOmoap2IejeKjNnU7KOORz9w4rFIa8/view?usp=sharing)
-
 ### [AI Transcripts](https://shaynelarocque.github.io/reviewlens/)
 
 ---
