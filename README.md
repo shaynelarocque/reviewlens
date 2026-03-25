@@ -43,7 +43,7 @@ The scope guard operates as a four-layer defence, not a single check:
 - **Layer 3  Data Grounding**: `search_reviews` with `broaden=true` runs multiple query variants. If nothing relevant surfaces, the agent says so honestly instead of hallucinating.
 - **Layer 4  Self-Correction**: `calculate_stats` confirms numbers before the agent states them. `get_review_by_id` spot-checks that cited reviews actually say what the agent claims. Corrections happen transparently in the analysis timeline.
 
-![Scope Guard](docs/scope-guard.excalidraw.svg)
+![Scope Guard](docs/scope-guard.svg)
 
 ---
 
